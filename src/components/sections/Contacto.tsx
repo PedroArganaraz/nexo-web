@@ -1,7 +1,9 @@
 'use client'
 
-import { useRef, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { motion, useInView } from 'framer-motion'
+
+const WA_NUMBER = '5493512540654'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -90,16 +92,27 @@ const inputClass =
 
 export default function Contacto() {
   const ref = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const [sent, setSent] = useState(false)
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
-    console.log({
-      nombre: data.get('nombre'),
-      email: data.get('email'),
-      mensaje: data.get('mensaje'),
-    })
+    const nombre = (data.get('nombre') as string).trim()
+    const email = (data.get('email') as string).trim()
+    const mensaje = (data.get('mensaje') as string).trim()
+
+    const parts = [`Hola, soy ${nombre}.`]
+    if (email) parts.push(`Mi email es ${email}.`)
+    parts.push(mensaje)
+
+    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(parts.join(' '))}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+
+    setSent(true)
+    formRef.current?.reset()
+    setTimeout(() => setSent(false), 3000)
   }
 
   return (
@@ -118,6 +131,7 @@ export default function Contacto() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
           {/* Form */}
           <motion.form
+            ref={formRef}
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
             transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
@@ -134,8 +148,7 @@ export default function Contacto() {
             <input
               type="email"
               name="email"
-              placeholder="Email"
-              required
+              placeholder="Email (opcional)"
               className={inputClass}
             />
             <textarea
@@ -145,12 +158,33 @@ export default function Contacto() {
               rows={5}
               className={`${inputClass} resize-none`}
             />
-            <button
-              type="submit"
-              className="mt-2 bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 self-start"
-            >
-              Enviar mensaje
-            </button>
+            <div className="mt-2 flex items-center gap-4">
+              <button
+                type="submit"
+                className="flex items-center gap-2 bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 shrink-0" aria-hidden="true">
+                  <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Enviar por WhatsApp
+              </button>
+              {sent && (
+                <motion.span
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm text-text-secondary"
+                >
+                  ¡Redirigiendo a WhatsApp!
+                </motion.span>
+              )}
+            </div>
           </motion.form>
 
           {/* Contact info */}
