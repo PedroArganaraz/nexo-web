@@ -22,6 +22,16 @@ export default function Navbar() {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
+  function handleMobileNavClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    e.preventDefault()
+    setIsMobileMenuOpen(false)
+    // Wait for the close animation (250ms) before scrolling
+    setTimeout(() => {
+      const el = document.getElementById(href.slice(1))
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }, 300)
+  }
+
   const textColor = isScrolled ? 'text-[#1a1a1a]' : 'text-white'
   const barColor = isScrolled ? 'bg-[#1a1a1a]' : 'bg-white'
 
@@ -93,7 +103,7 @@ export default function Navbar() {
                 <a
                   key={link.href}
                   href={link.href}
-                  onClick={closeMobileMenu}
+                  onClick={(e) => handleMobileNavClick(e, link.href)}
                   className={`text-[#1a1a1a] text-base py-3 tracking-wide transition-colors hover:text-text-secondary ${
                     i < navLinks.length - 1 ? 'border-b border-gray-100' : ''
                   }`}

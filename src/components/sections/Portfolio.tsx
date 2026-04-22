@@ -37,16 +37,23 @@ function ProjectCard({
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       />
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300" />
+      {/* Gradient overlay — siempre visible */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-80" />
 
-      {/* Caption */}
-      <div className="absolute inset-x-0 bottom-0 p-5 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+      {/* Caption — siempre visible */}
+      <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
         <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
           {project.category}
         </span>
-        <span className="block font-heading font-semibold text-white text-lg leading-snug">
+        <span className="block font-heading font-semibold text-white text-base md:text-lg leading-snug">
           {project.title}
+        </span>
+        <span className="mt-2 inline-flex items-center gap-1 text-white/60 text-xs tracking-wide">
+          <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M6 8h4M8 6l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Ver proyecto
         </span>
       </div>
     </motion.button>
