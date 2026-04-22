@@ -31,7 +31,7 @@ export default function Hero() {
           initial={FADE_UP}
           animate={FADE_IN}
           transition={fadeTransition(0)}
-          className="font-heading font-bold text-white text-5xl md:text-6xl lg:text-7xl leading-tight mb-4"
+          className="font-helvetica font-bold text-white text-5xl md:text-6xl lg:text-7xl leading-tight mb-4"
         >
           Arquitectura
           <br />

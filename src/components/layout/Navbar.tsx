@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import Image from 'next/image'
 
 const navLinks = [
   { label: 'Servicios', href: '#servicios' },
@@ -43,11 +44,17 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <a
-          href="#hero"
-          className={`font-heading font-bold text-xl tracking-widest transition-colors duration-300 ${textColor}`}
-        >
-          NEXO
+        <a href="#hero" className="flex items-center">
+          <Image
+            src="/images/NEXO_transparent.png"
+            alt="Nexo Estudio"
+            width={120}
+            height={40}
+            className={`h-8 w-auto transition-all duration-300 ${
+              isScrolled ? '' : 'invert'
+            }`}
+            priority
+          />
         </a>
 
         {/* Desktop nav */}

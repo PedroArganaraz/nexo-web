@@ -5,6 +5,7 @@ import Portfolio from "@/components/sections/Portfolio";
 import SobreNexo from "@/components/sections/SobreNexo";
 import Contacto from "@/components/sections/Contacto";
 import Footer from "@/components/layout/Footer";
+import WhatsAppButton from "@/components/ui/WhatsAppButton";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
         <Contacto />
       </main>
       <Footer />
+      <WhatsAppButton />
     </>
   );
 }
