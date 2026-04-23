@@ -26,47 +26,67 @@ export default function SobreNexo() {
       </div>
 
       {/* Full-width image */}
-      <div className="relative w-full" style={{ height: '85vh' }}>
-      <Image
-        src="/images/equipo.png"
-        alt="Alma, Cami y Lu — Nexo Estudio"
-        fill
-        className="object-cover object-[65%_center]"
-        sizes="100vw"
-      />
+      <div className="relative w-full h-[60vh] md:h-[85vh]">
+        <Image
+          src="/images/equipo.png"
+          alt="Alma, Cami y Lu — Nexo Estudio"
+          fill
+          className="object-cover object-center md:object-[65%_center]"
+          sizes="100vw"
+        />
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/45" />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/45" />
 
-      {/* Top text */}
+        {/* Top text — solo desktop */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.8, ease: EASE }}
+          className="hidden md:block absolute top-14 left-0 right-0 px-16 max-w-3xl"
+        >
+          <p className="font-helvetica text-white text-xl leading-relaxed">
+            Somos Alma, Cami y Lu. Amigas y arquitectas.
+          </p>
+          <p className="font-helvetica text-white/85 text-lg leading-relaxed mt-4">
+            Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
+            Nos conocimos en la facultad y hoy seguimos eligiendo trabajar juntas, impulsadas por la
+            sensibilidad, la escucha y el diseño como forma de expresión.
+          </p>
+        </motion.div>
+
+        {/* Bottom text — solo desktop */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.8, ease: EASE, delay: 0.2 }}
+          className="hidden md:block absolute bottom-14 left-0 right-0 px-16"
+        >
+          <p className="font-helvetica text-white text-lg leading-relaxed">
+            El resultado final es solo una parte. Diseñamos todo lo que lo hace posible.
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Texto mobile — por fuera de la imagen */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
         transition={{ duration: 0.8, ease: EASE }}
-        className="absolute top-10 md:top-14 left-0 right-0 px-6 md:px-16 max-w-3xl"
+        className="md:hidden bg-[#1a1a1a] px-6 py-8"
       >
-        <p className="font-helvetica text-white text-lg md:text-xl leading-relaxed">
+        <p className="font-helvetica text-white text-base leading-relaxed">
           Somos Alma, Cami y Lu. Amigas y arquitectas.
         </p>
-        <p className="font-helvetica text-white/85 text-base md:text-lg leading-relaxed mt-4">
+        <p className="font-helvetica text-white/75 text-sm leading-relaxed mt-3">
           Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
           Nos conocimos en la facultad y hoy seguimos eligiendo trabajar juntas, impulsadas por la
           sensibilidad, la escucha y el diseño como forma de expresión.
         </p>
-      </motion.div>
-
-      {/* Bottom text */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.8, ease: EASE, delay: 0.2 }}
-        className="absolute bottom-10 md:bottom-14 left-0 right-0 px-6 md:px-16"
-      >
-        <p className="font-helvetica text-white text-base md:text-lg leading-relaxed">
+        <p className="font-helvetica text-white/60 text-sm leading-relaxed mt-4 pt-4 border-t border-white/10">
           El resultado final es solo una parte. Diseñamos todo lo que lo hace posible.
         </p>
       </motion.div>
-      </div>
     </section>
   )
 }
