@@ -13,6 +13,7 @@ export interface ProjectImage {
 export interface Project {
   id: string;
   title: string;
+  subtitle: string;
   category: string;
   description: string;
   coverImage: ProjectImage;

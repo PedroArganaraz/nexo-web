@@ -6,6 +6,7 @@ export const projects: Project[] = [
   {
     id: "chacabuco",
     title: "Chacabuco",
+    subtitle: "Departamento",
     category: "Remodelación",
     description:
       "Intervención integral de un departamento de los años 80 en el barrio Chacabuco. Se reorganizó la planta para ganar amplitud en los espacios sociales, incorporando materialidad contemporánea que dialoga con la preexistencia.",
@@ -31,6 +32,7 @@ export const projects: Project[] = [
   {
     id: "bano-milano",
     title: "Baño Milano",
+    subtitle: "Vivienda",
     category: "Diseño de interiores",
     description:
       "Diseño de un baño principal en un edificio de Nueva Córdoba. Se buscó una atmósfera spa con terminaciones en microcemento, griferías mate y luz cálida indirecta. El resultado: un espacio pequeño que se siente generoso.",
@@ -55,7 +57,8 @@ export const projects: Project[] = [
   },
   {
     id: "casa-tanti",
-    title: "Casa Tanti",
+    title: "Bertoldi",
+    subtitle: "Vivienda",
     category: "Arquitectura residencial",
     description:
       "Vivienda unifamiliar en las sierras de Córdoba. El proyecto responde al paisaje mediante volúmenes que se abren hacia el verde y materiales que envejecen con dignidad: hormigón, madera y vidrio.",
@@ -80,7 +83,8 @@ export const projects: Project[] = [
   },
   {
     id: "casa-calina",
-    title: "Casa Calina",
+    title: "Castelana",
+    subtitle: "Vivienda",
     category: "Obra nueva",
     description:
       "Obra nueva en barrio privado de Alta Gracia. Programa de 240 m² distribuidos en planta baja y primer piso, con foco en la relación entre los espacios interiores y el jardín. Dirección de obra a cargo de Nexo.",
@@ -105,7 +109,8 @@ export const projects: Project[] = [
   },
   {
     id: "potrero",
-    title: "Potrero",
+    title: "Cerro Las Rosas",
+    subtitle: "Vivienda",
     category: "Arquitectura residencial",
     description:
       "Casa de fin de semana en Valle de Punilla. El encargo fue claro: mínima huella, máxima integración. Una volumetría lineal que se asienta sobre el terreno sin imponerse, con techos que recogen el agua de lluvia.",
@@ -130,7 +135,8 @@ export const projects: Project[] = [
   },
   {
     id: "depto-nueva-cordoba",
-    title: "Depto Nueva Córdoba",
+    title: "Refugio",
+    subtitle: "Espacio efímero",
     category: "Diseño de interiores",
     description:
       "Puesta en valor de un departamento de 60 m² para alquiler temporario. Se priorizó la funcionalidad sin resignar estética: mobiliario a medida, paleta neutra y textiles cálidos que generan pertenencia desde el primer día.",

@@ -45,8 +45,11 @@ function ProjectCard({
         <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
           {project.category}
         </span>
-        <span className="block font-heading font-semibold text-white text-base md:text-lg leading-snug">
+        <span className="block font-helvetica font-semibold text-white text-base md:text-lg leading-snug uppercase tracking-wide">
           {project.title}
+        </span>
+        <span className="block text-[11px] text-white/60 uppercase tracking-widest mt-0.5">
+          {project.subtitle}
         </span>
         <span className="mt-2 inline-flex items-center gap-1 text-white/60 text-xs tracking-wide">
           <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5" aria-hidden="true">
@@ -76,7 +79,7 @@ export default function Portfolio() {
             transition={{ duration: 0.6, ease: EASE }}
             className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-16"
           >
-            Trabajos realizados
+            Algunos proyectos
           </motion.h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

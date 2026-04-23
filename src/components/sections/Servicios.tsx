@@ -6,27 +6,27 @@ import { motion, useInView } from 'framer-motion'
 const services = [
   {
     id: 'residencial',
-    title: 'Arquitectura residencial',
+    title: 'Proyecto arquitectónico',
     description:
-      'Diseñamos viviendas pensadas para la vida cotidiana. Cada proyecto parte del cliente, su forma de habitar y el contexto donde se emplaza.',
+      'Diseñamos desde cero, adaptando cada proyecto al uso, el contexto y las necesidades del cliente. Definimos distribución, materialidad y funcionamiento desde una mirada integral.',
   },
   {
     id: 'interiores',
     title: 'Diseño de interiores',
     description:
-      'Intervenimos espacios existentes con criterio estético y funcional. Materiales, luz y proporción al servicio de una atmósfera propia.',
+      'Transformamos espacios existentes a través del diseño y la planificación. Trabajamos con materiales, iluminación y mobiliario para lograr ambientes coherentes y funcionales.',
   },
   {
     id: 'remodelaciones',
     title: 'Remodelaciones',
     description:
-      'Transformamos lo existente para adaptarlo a nuevas necesidades. Aprovechamos el potencial oculto de cada espacio con soluciones precisas.',
+      'Reconfiguramos espacios para adaptarlos a nuevas necesidades. Detectamos oportunidades y resolvemos cada intervención con decisiones precisas.',
   },
   {
     id: 'direccion',
-    title: 'Proyecto y dirección de obra',
+    title: 'Dirección de obra',
     description:
-      'Acompañamos el proceso completo: desde la idea hasta la entrega de llaves. Coordinamos equipo, plazos y calidad con dedicación total.',
+      'Desarrollamos el proyecto completo y acompañamos su ejecución. Coordinamos obra, resolvemos en el proceso y aseguramos que cada decisión se materialice correctamente.',
   },
 ]
 
@@ -66,19 +66,28 @@ export default function Servicios() {
       <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
         {/* Section header */}
         <motion.h2
+          ref={ref}
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const }}
-          className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-16"
+          className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-6"
         >
           Servicios
         </motion.h2>
 
-        {/* Cards grid */}
-        <div
-          ref={ref}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+        <motion.p
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: 0.1 }}
+          className="text-text-secondary text-base leading-relaxed text-center max-w-2xl mx-auto mb-16"
         >
+          Nos importa tanto el proceso como el resultado.
+          <br />
+          Cada proyecto se desarrolla a partir de decisiones concretas que conectan diseño, técnica y ejecución.
+        </motion.p>
+
+        {/* Cards grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {services.map((service, index) => (
             <ServiceCard
               key={service.id}
