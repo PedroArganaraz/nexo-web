@@ -59,8 +59,8 @@ const contactItems = [
   {
     id: 'email',
     label: 'Email',
-    value: 'contacto@estudionexo.com',
-    href: 'mailto:contacto@estudionexo.com',
+    value: 'estudionexo.arquitectura@gmail.com',
+    href: 'mailto:estudionexo.arquitectura@gmail.com',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 shrink-0" aria-hidden="true">
         <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />

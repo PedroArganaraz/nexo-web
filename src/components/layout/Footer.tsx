@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 const navLinks = [
   { label: 'Servicios', href: '#servicios' },
   { label: 'Trabajos', href: '#trabajos' },
@@ -46,16 +48,20 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10">
           {/* Logo + tagline */}
-          <div className="flex flex-col gap-3">
-            <a
-              href="#hero"
-              className="font-heading font-bold text-xl tracking-widest hover:opacity-70 transition-opacity"
-            >
-              NEXO
+          <div className="flex flex-col gap-4">
+            <a href="#hero" className="hover:opacity-70 transition-opacity">
+              <Image
+                src="/images/NEXO_transparent.png"
+                alt="Nexo Estudio"
+                width={120}
+                height={40}
+                className="h-8 w-auto invert"
+              />
             </a>
-            <p className="text-sm text-white/50 max-w-50 leading-relaxed">
-              Arquitectura & Diseño de interiores. Córdoba, Argentina.
-            </p>
+            <div className="text-sm text-white/50 leading-relaxed">
+              <p>Arquitectura & Diseño de interiores</p>
+              <p>Córdoba, Argentina</p>
+            </div>
           </div>
 
           {/* Nav links */}

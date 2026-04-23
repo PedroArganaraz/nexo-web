@@ -42,9 +42,11 @@ export default function Hero() {
           initial={FADE_UP}
           animate={FADE_IN}
           transition={fadeTransition(0.2)}
-          className="text-white/80 text-lg mb-8 max-w-md"
+          className="text-white/80 text-lg mb-8 max-w-xl leading-relaxed"
         >
           Transformamos espacios en experiencias.
+          <br />
+          Diseñamos, planificamos y ejecutamos cada detalle.
         </motion.p>
 
         <motion.a
