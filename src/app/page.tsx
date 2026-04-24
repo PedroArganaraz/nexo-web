@@ -1,5 +1,6 @@
 import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/sections/Hero";
+import NexoInteractive from "@/components/NexoInteractive";
 import SobreElEstudio from "@/components/sections/SobreElEstudio";
 import Servicios from "@/components/sections/Servicios";
 import Proceso from "@/components/sections/Proceso";
@@ -15,6 +16,7 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <NexoInteractive />
         <SobreElEstudio />
         <Servicios />
         <Proceso />
