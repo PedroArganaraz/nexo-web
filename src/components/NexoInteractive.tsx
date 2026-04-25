@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Image from 'next/image'
 
 const BS               = 4
 const GRAVITY          = 0.55
@@ -49,7 +48,6 @@ export default function NexoInteractive() {
     const canvas    = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
-    if (window.matchMedia('(hover: none)').matches) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -379,12 +377,31 @@ export default function NexoInteractive() {
       resize()
       ro.observe(container)
 
-      canvas.addEventListener('mousemove', e => {
+      const toCanvasCoords = (clientX: number, clientY: number) => {
         const rect = canvas.getBoundingClientRect()
         const sx = canvas.width / rect.width
         const sy = canvas.height / rect.height
-        scatter((e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy)
+        return [(clientX - rect.left) * sx, (clientY - rect.top) * sy] as const
+      }
+
+      canvas.addEventListener('mousemove', e => {
+        const [cx, cy] = toCanvasCoords(e.clientX, e.clientY)
+        scatter(cx, cy)
       })
+
+      canvas.addEventListener('touchstart', e => {
+        e.preventDefault()
+        const t = e.touches[0]
+        const [cx, cy] = toCanvasCoords(t.clientX, t.clientY)
+        scatter(cx, cy)
+      }, { passive: false })
+
+      canvas.addEventListener('touchmove', e => {
+        e.preventDefault()
+        const t = e.touches[0]
+        const [cx, cy] = toCanvasCoords(t.clientX, t.clientY)
+        scatter(cx, cy)
+      }, { passive: false })
 
       animId = requestAnimationFrame(tick)
     }
@@ -399,22 +416,15 @@ export default function NexoInteractive() {
 
   return (
     <section className="relative w-full bg-white" style={{ minHeight: '100vh' }}>
-      {/* Mobile: static logo */}
-      <div className="md:hidden flex items-center justify-center w-full h-screen">
-        <div className="relative w-72 h-28">
-          <Image src="/images/NEXO_transparent.png" alt="NEXO" fill className="object-contain" />
-        </div>
-      </div>
-      {/* Desktop: canvas animation */}
       <div
         ref={containerRef}
-        className="hidden md:block relative w-full"
+        className="relative w-full"
         style={{ height: '100vh' }}
       >
         <canvas
           ref={canvasRef}
           className="absolute inset-0"
-          style={{ display: 'block', width: '100%', height: '100%' }}
+          style={{ display: 'block', width: '100%', height: '100%', touchAction: 'none' }}
         />
       </div>
     </section>

@@ -50,6 +50,7 @@ export default function Navbar() {
             alt="Nexo Estudio"
             width={120}
             height={40}
+            priority
             className={`h-8 w-auto transition-all duration-300 ${
               isScrolled ? '' : 'invert'
             }`}
