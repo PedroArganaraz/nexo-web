@@ -389,16 +389,22 @@ export default function NexoInteractive() {
         scatter(cx, cy)
       })
 
+      let touchStartX = 0, touchStartY = 0
+
       canvas.addEventListener('touchstart', e => {
-        e.preventDefault()
         const t = e.touches[0]
+        touchStartX = t.clientX
+        touchStartY = t.clientY
         const [cx, cy] = toCanvasCoords(t.clientX, t.clientY)
         scatter(cx, cy)
-      }, { passive: false })
+      }, { passive: true })
 
       canvas.addEventListener('touchmove', e => {
-        e.preventDefault()
         const t = e.touches[0]
+        const dx = Math.abs(t.clientX - touchStartX)
+        const dy = Math.abs(t.clientY - touchStartY)
+        if (dy > dx) return   // vertical swipe → let page scroll through
+        e.preventDefault()
         const [cx, cy] = toCanvasCoords(t.clientX, t.clientY)
         scatter(cx, cy)
       }, { passive: false })
@@ -415,11 +421,10 @@ export default function NexoInteractive() {
   }, [])
 
   return (
-    <section className="relative w-full bg-white" style={{ minHeight: '100vh' }}>
+    <section className="relative w-full bg-white h-[250px] md:h-screen">
       <div
         ref={containerRef}
-        className="relative w-full"
-        style={{ height: '100vh' }}
+        className="relative w-full h-full"
       >
         <canvas
           ref={canvasRef}
