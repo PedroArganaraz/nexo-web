@@ -54,7 +54,6 @@ export default function Navbar() {
             className={`h-8 w-auto transition-all duration-300 ${
               isScrolled ? '' : 'invert'
             }`}
-            priority
           />
         </a>
 
