@@ -141,6 +141,8 @@ function ImageCard({
   );
 }
 
+type Size = { width: number; height: number };
+
 function FocalPointModal({
   image,
   onSave,
@@ -150,74 +152,138 @@ function FocalPointModal({
   onSave: (focalX: number, focalY: number) => void;
   onCancel: () => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [focalX, setFocalX] = useState(image.focalX);
-  const [focalY, setFocalY] = useState(image.focalY);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<{
+    startClientX: number;
+    startClientY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
+
+  const [frameSize, setFrameSize] = useState<Size | null>(null);
+  const [naturalSize, setNaturalSize] = useState<Size | null>(null);
+  // null mientras el usuario no arrastró todavía: el offset se deriva del
+  // focal_x/focal_y ya guardado. Una vez que arrastra, esto pasa a mandar.
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [isDragging, setIsDragging] = useState(false);
 
-  function updateFromEvent(e: { clientX: number; clientY: number }) {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
-    const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
-    setFocalX(x);
-    setFocalY(y);
+  // Mide el marco de recorte (su tamaño real en píxeles, que puede variar
+  // según el ancho disponible del modal).
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      setFrameSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const el = e.currentTarget;
+    setNaturalSize({ width: el.naturalWidth, height: el.naturalHeight });
   }
 
+  // Escala "cover": la imagen llena el marco por el eje más chico, sin
+  // distorsión. El eje que no coincide exactamente con el marco es el que
+  // queda con espacio de sobra ("excess") para poder arrastrar.
+  const scale =
+    frameSize && naturalSize
+      ? Math.max(
+          frameSize.width / naturalSize.width,
+          frameSize.height / naturalSize.height
+        )
+      : 1;
+  const renderedWidth = naturalSize ? naturalSize.width * scale : 0;
+  const renderedHeight = naturalSize ? naturalSize.height * scale : 0;
+  const excessX = frameSize ? Math.max(0, renderedWidth - frameSize.width) : 0;
+  const excessY = frameSize
+    ? Math.max(0, renderedHeight - frameSize.height)
+    : 0;
+
+  // Offset derivado del focal_x/focal_y ya guardado (o 50/50 si es nueva),
+  // hasta que el usuario arrastre y dragOffset tome el control.
+  const offset = dragOffset ?? {
+    x: -excessX * (image.focalX / 100),
+    y: -excessY * (image.focalY / 100),
+  };
+
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (excessX === 0 && excessY === 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDragging(true);
-    updateFromEvent(e);
+    dragStateRef.current = {
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startOffsetX: offset.x,
+      startOffsetY: offset.y,
+    };
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!isDragging) return;
-    updateFromEvent(e);
+    if (!isDragging || !dragStateRef.current) return;
+    const { startClientX, startClientY, startOffsetX, startOffsetY } =
+      dragStateRef.current;
+    setDragOffset({
+      x: clamp(startOffsetX + (e.clientX - startClientX), -excessX, 0),
+      y: clamp(startOffsetY + (e.clientY - startClientY), -excessY, 0),
+    });
   }
 
   function handlePointerUp() {
     setIsDragging(false);
+    dragStateRef.current = null;
   }
+
+  // Traducción inversa de la posición de arrastre a focal_x/focal_y (0-100),
+  // el mismo formato que ya consumen object-position en la landing pública.
+  const focalX = excessX > 0 ? clamp((-offset.x / excessX) * 100, 0, 100) : 50;
+  const focalY = excessY > 0 ? clamp((-offset.y / excessY) * 100, 0, 100) : 50;
+  const canDrag = excessX > 0 || excessY > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
         <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-1">
-          Ajustar punto focal
+          Ajustar recorte
         </h2>
         <p className="text-xs text-text-secondary mb-4">
-          Arrastrá el punto sobre la imagen para indicar qué parte siempre
-          debe verse en los recortes.
+          Arrastrá la imagen dentro del marco para elegir qué parte se ve
+          siempre en los recortes.
         </p>
 
         <div
-          ref={containerRef}
+          ref={frameRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          className="relative select-none cursor-crosshair"
+          onPointerCancel={handlePointerUp}
+          className={`relative w-full max-w-md mx-auto aspect-[4/3] overflow-hidden bg-bg-alt rounded-sm select-none ${
+            canDrag ? "cursor-grab active:cursor-grabbing" : ""
+          }`}
           style={{ touchAction: "none" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={image.previewUrl}
             alt=""
-            className="block w-full h-auto pointer-events-none"
-          />
-          <div
-            className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#1a1a1a] shadow-md pointer-events-none"
-            style={{ left: `${focalX}%`, top: `${focalY}%` }}
-          />
-        </div>
-
-        <p className={`${labelClass} mt-6`}>Vista previa del recorte</p>
-        <div className="relative w-full max-w-xs overflow-hidden aspect-[4/3] bg-bg-alt rounded-sm">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={image.previewUrl}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: `${focalX}% ${focalY}%` }}
+            draggable={false}
+            onLoad={handleImageLoad}
+            className="absolute pointer-events-none select-none"
+            style={{
+              width: renderedWidth || undefined,
+              height: renderedHeight || undefined,
+              left: offset.x,
+              top: offset.y,
+              maxWidth: "none",
+              maxHeight: "none",
+            }}
           />
         </div>
 
@@ -757,7 +823,7 @@ export default function ProyectoForm({
             type="button"
             onClick={() => router.push("/admin/proyectos")}
             disabled={saving}
-            className="text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer disabled:opacity-50"
+            className="text-sm text-[#1a1a1a] border border-[#1a1a1a] rounded-full px-6 py-3 hover:bg-[#1a1a1a] hover:text-white transition-colors duration-200 cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>

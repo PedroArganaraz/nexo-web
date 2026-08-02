@@ -68,6 +68,32 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <a
+            href="/admin/login"
+            aria-label="Acceso administrador"
+            className="text-[#1a1a1a] hover:opacity-70 transition-opacity duration-300"
+          >
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              className="w-6 h-6"
+              aria-hidden="true"
+            >
+              <circle
+                cx="10"
+                cy="6.5"
+                r="3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </a>
         </nav>
 
         {/* Hamburger button */}
