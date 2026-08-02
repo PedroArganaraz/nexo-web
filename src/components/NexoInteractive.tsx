@@ -97,6 +97,7 @@ export default function NexoInteractive() {
     const buildBlocks = () => {
       W = canvas.width
       H = canvas.height
+      if (W <= 0 || H <= 0) return
 
       const sc = Math.min((W * 0.62) / img.naturalWidth, (H * 0.28) / img.naturalHeight)
       logoW = Math.round(img.naturalWidth * sc)
@@ -165,6 +166,7 @@ export default function NexoInteractive() {
     const resize = () => {
       const w = container.offsetWidth
       const h = container.offsetHeight
+      if (w <= 0 || h <= 0) return
       if (w === canvas.width && h === canvas.height) return
       canvas.width = w; canvas.height = h
       buildBlocks()
