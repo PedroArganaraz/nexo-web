@@ -8,6 +8,8 @@ export interface Service {
 export interface ProjectImage {
   src: string;
   alt: string;
+  focalX?: number;
+  focalY?: number;
 }
 
 export interface Project {

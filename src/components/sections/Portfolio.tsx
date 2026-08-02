@@ -33,6 +33,11 @@ function ProjectCard({
         alt={project.coverImage.alt}
         fill
         className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+        style={{
+          objectPosition: `${project.coverImage.focalX ?? 50}% ${
+            project.coverImage.focalY ?? 50
+          }%`,
+        }}
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       />
 

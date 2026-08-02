@@ -82,6 +82,11 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
               alt={activeImage.alt}
               fill
               className="object-cover rounded-t-xl md:rounded-l-xl md:rounded-tr-none"
+              style={{
+                objectPosition: `${activeImage.focalX ?? 50}% ${
+                  activeImage.focalY ?? 50
+                }%`,
+              }}
               sizes="(max-width: 768px) 100vw, 58vw"
             />
 
@@ -144,6 +149,11 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
                   alt={img.alt}
                   fill
                   className="object-cover"
+                  style={{
+                    objectPosition: `${img.focalX ?? 50}% ${
+                      img.focalY ?? 50
+                    }%`,
+                  }}
                   sizes="15vw"
                 />
               </button>

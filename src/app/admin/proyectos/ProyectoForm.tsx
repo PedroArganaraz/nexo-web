@@ -1,0 +1,623 @@
+"use client";
+
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { createClient } from "@/lib/supabase/client";
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const inputClass =
+  "w-full bg-white border border-[#e0e0e0] rounded-sm px-4 py-3 text-sm text-[#1a1a1a] placeholder-[#aaaaaa] outline-none focus:border-[#1a1a1a] transition-colors duration-200";
+
+const labelClass =
+  "block text-xs uppercase tracking-widest text-text-secondary mb-1.5";
+
+type PendingImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  focalX: number;
+  focalY: number;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function DragHandleIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="w-4 h-4"
+      aria-hidden="true"
+    >
+      <circle cx="7" cy="4" r="1.3" />
+      <circle cx="13" cy="4" r="1.3" />
+      <circle cx="7" cy="10" r="1.3" />
+      <circle cx="13" cy="10" r="1.3" />
+      <circle cx="7" cy="16" r="1.3" />
+      <circle cx="13" cy="16" r="1.3" />
+    </svg>
+  );
+}
+
+function ImageCard({
+  image,
+  isCover,
+  onEdit,
+  onRemove,
+}: {
+  image: PendingImage;
+  isCover: boolean;
+  onEdit: (image: PendingImage) => void;
+  onRemove: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-sm overflow-hidden ${
+        isCover ? "border-2 border-[#1a1a1a]" : "border border-[#e0e0e0]"
+      }`}
+    >
+      <div className="relative aspect-[4/3] bg-bg-alt">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={image.previewUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }}
+        />
+        <button
+          {...attributes}
+          {...listeners}
+          type="button"
+          className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center bg-white/90 rounded-full text-text-secondary hover:text-[#1a1a1a] cursor-grab active:cursor-grabbing shadow-sm"
+          style={{ touchAction: "none" }}
+          aria-label="Reordenar imagen"
+        >
+          <DragHandleIcon />
+        </button>
+        {isCover && (
+          <span className="absolute top-2 right-2 bg-[#1a1a1a] text-white text-[10px] uppercase tracking-widest px-2 py-1 rounded-full">
+            Portada
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2 p-2">
+        <button
+          type="button"
+          onClick={() => onEdit(image)}
+          className="text-xs text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer"
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(image.id)}
+          className="text-xs text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer"
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FocalPointModal({
+  image,
+  onSave,
+  onCancel,
+}: {
+  image: PendingImage;
+  onSave: (focalX: number, focalY: number) => void;
+  onCancel: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [focalX, setFocalX] = useState(image.focalX);
+  const [focalY, setFocalY] = useState(image.focalY);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function updateFromEvent(e: { clientX: number; clientY: number }) {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const y = clamp(((e.clientY - rect.top) / rect.height) * 100, 0, 100);
+    setFocalX(x);
+    setFocalY(y);
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    updateFromEvent(e);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isDragging) return;
+    updateFromEvent(e);
+  }
+
+  function handlePointerUp() {
+    setIsDragging(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-1">
+          Ajustar punto focal
+        </h2>
+        <p className="text-xs text-text-secondary mb-4">
+          Arrastrá el punto sobre la imagen para indicar qué parte siempre
+          debe verse en los recortes.
+        </p>
+
+        <div
+          ref={containerRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          className="relative select-none cursor-crosshair"
+          style={{ touchAction: "none" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image.previewUrl}
+            alt=""
+            className="block w-full h-auto pointer-events-none"
+          />
+          <div
+            className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#1a1a1a] shadow-md pointer-events-none"
+            style={{ left: `${focalX}%`, top: `${focalY}%` }}
+          />
+        </div>
+
+        <p className={`${labelClass} mt-6`}>Vista previa del recorte</p>
+        <div className="relative w-full max-w-xs overflow-hidden aspect-[4/3] bg-bg-alt rounded-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image.previewUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: `${focalX}% ${focalY}%` }}
+          />
+        </div>
+
+        <div className="flex items-center gap-4 mt-6">
+          <button
+            type="button"
+            onClick={() => onSave(focalX, focalY)}
+            className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-6 py-2.5 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ProyectoForm() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
+  const [categoria, setCategoria] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [subtitulo, setSubtitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [images, setImages] = useState<PendingImage[]>([]);
+  const [editingImage, setEditingImage] = useState<PendingImage | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  useEffect(() => {
+    return () => {
+      images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function addFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    const valid: File[] = [];
+    let hasInvalid = false;
+
+    for (const file of files) {
+      if (ALLOWED_TYPES.includes(file.type)) {
+        valid.push(file);
+      } else {
+        hasInvalid = true;
+      }
+    }
+
+    if (hasInvalid) {
+      toast.error(
+        "Formato no soportado. Convertí la imagen a JPG o PNG antes de subir."
+      );
+    }
+
+    if (valid.length === 0) return;
+
+    const newItems: PendingImage[] = valid.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      focalX: 50,
+      focalY: 50,
+    }));
+    setImages((prev) => [...prev, ...newItems]);
+  }
+
+  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.length) {
+      addFiles(e.target.files);
+    }
+    e.target.value = "";
+  }
+
+  function handleDragEnter(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDraggingOver(true);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+  }
+
+  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files?.length) {
+      addFiles(e.dataTransfer.files);
+    }
+  }
+
+  function handleRemove(id: string) {
+    setImages((prev) => {
+      const removed = prev.find((image) => image.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((image) => image.id !== id);
+    });
+  }
+
+  function handleSaveFocalPoint(focalX: number, focalY: number) {
+    if (!editingImage) return;
+    setImages((prev) =>
+      prev.map((image) =>
+        image.id === editingImage.id ? { ...image, focalX, focalY } : image
+      )
+    );
+    setEditingImage(null);
+  }
+
+  function handleImagesDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setImages((prev) => {
+      const oldIndex = prev.findIndex((img) => img.id === active.id);
+      const newIndex = prev.findIndex((img) => img.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }
+
+  async function handleSave() {
+    if (!categoria.trim() || !nombre.trim()) {
+      toast.error("Categoría y nombre son obligatorios.");
+      return;
+    }
+
+    setSaving(true);
+    const supabase = createClient();
+    const id = crypto.randomUUID();
+
+    try {
+      const { data: maxOrdenRow } = await supabase
+        .from("proyectos")
+        .select("orden")
+        .order("orden", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextOrden = (maxOrdenRow?.orden ?? -1) + 1;
+
+      const { error: insertError } = await supabase.from("proyectos").insert({
+        id,
+        categoria: categoria.trim(),
+        nombre: nombre.trim(),
+        subtitulo: subtitulo.trim(),
+        descripcion: descripcion.trim(),
+        orden: nextOrden,
+      });
+
+      if (insertError) throw insertError;
+
+      const uploadedPaths: string[] = [];
+
+      try {
+        for (let index = 0; index < images.length; index++) {
+          const image = images[index];
+          const extension = image.file.name.split(".").pop() || "jpg";
+          const path = `${id}/${crypto.randomUUID()}.${extension}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("proyectos")
+            .upload(path, image.file);
+
+          if (uploadError) throw uploadError;
+          uploadedPaths.push(path);
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("proyectos").getPublicUrl(path);
+
+          const { error: imageInsertError } = await supabase
+            .from("proyecto_imagenes")
+            .insert({
+              proyecto_id: id,
+              url: publicUrl,
+              path,
+              orden: index,
+              es_portada: index === 0,
+              focal_x: image.focalX,
+              focal_y: image.focalY,
+            });
+
+          if (imageInsertError) throw imageInsertError;
+        }
+      } catch (imagesError) {
+        if (uploadedPaths.length > 0) {
+          await supabase.storage.from("proyectos").remove(uploadedPaths);
+        }
+        await supabase.from("proyecto_imagenes").delete().eq("proyecto_id", id);
+        await supabase.from("proyectos").delete().eq("id", id);
+        throw imagesError;
+      }
+
+      toast.success("Proyecto creado correctamente.");
+      router.push("/admin/proyectos");
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudo crear el proyecto. Intentá de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const coverImage = images[0];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] mb-6">
+            Nuevo proyecto
+          </h1>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Categoría *</label>
+              <input
+                type="text"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="Ej. Arquitectura residencial"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Nombre *</label>
+              <input
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. Bertoldi"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Subtítulo</label>
+              <input
+                type="text"
+                value={subtitulo}
+                onChange={(e) => setSubtitulo(e.target.value)}
+                placeholder="Ej. Vivienda"
+                className={inputClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Descripción</label>
+              <textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                rows={5}
+                placeholder="Descripción del proyecto..."
+                className={`${inputClass} resize-none`}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>Imágenes</label>
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex flex-col items-center justify-center gap-2 rounded-sm px-6 py-10 text-center cursor-pointer transition-colors duration-150 ${
+              isDraggingOver
+                ? "border-2 border-solid border-[#1a1a1a] bg-bg-alt"
+                : "border border-dashed border-[#e0e0e0] hover:border-[#bbbbbb]"
+            }`}
+          >
+            <span
+              className={`text-sm transition-colors duration-150 ${
+                isDraggingOver ? "text-[#1a1a1a] font-medium" : "text-[#1a1a1a]"
+              }`}
+            >
+              {isDraggingOver
+                ? "Soltá las imágenes acá"
+                : "Arrastrá imágenes acá o hacé click para elegir"}
+            </span>
+            <span className="text-xs text-text-secondary">
+              JPG, PNG o WEBP
+            </span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+          </div>
+
+          {images.length > 0 && (
+            <div className="mt-4">
+              <DndContext
+                id="proyecto-form-images-dnd"
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleImagesDragEnd}
+              >
+                <SortableContext
+                  items={images.map((image) => image.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {images.map((image, index) => (
+                      <ImageCard
+                        key={image.id}
+                        image={image}
+                        isCover={index === 0}
+                        onEdit={setEditingImage}
+                        onRemove={handleRemove}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Guardando..." : "Guardar proyecto"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/admin/proyectos")}
+            disabled={saving}
+            className="text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div>
+        <p className={labelClass}>Vista previa</p>
+        <div className="relative w-full overflow-hidden aspect-[4/3] bg-[#f5f5f5] rounded-sm">
+          {coverImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverImage.previewUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                objectPosition: `${coverImage.focalX}% ${coverImage.focalY}%`,
+              }}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
+              {categoria || "Categoría"}
+            </span>
+            <span className="block font-helvetica font-semibold text-white text-base leading-snug uppercase tracking-wide">
+              {nombre || "Nombre del proyecto"}
+            </span>
+            <span className="block text-[11px] text-white/60 uppercase tracking-widest mt-0.5">
+              {subtitulo || "Subtítulo"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {editingImage && (
+        <FocalPointModal
+          image={editingImage}
+          onSave={handleSaveFocalPoint}
+          onCancel={() => setEditingImage(null)}
+        />
+      )}
+    </div>
+  );
+}

@@ -16,6 +16,8 @@ export type ProyectoImagen = {
   path: string;
   orden: number;
   es_portada: boolean;
+  focal_x: number;
+  focal_y: number;
   created_at: string;
 };
 
@@ -24,7 +26,7 @@ export type Database = {
     Tables: {
       proyectos: {
         Row: Proyecto;
-        Insert: Partial<Omit<Proyecto, "id" | "created_at" | "updated_at">> &
+        Insert: Partial<Omit<Proyecto, "created_at" | "updated_at">> &
           Pick<Proyecto, "categoria" | "nombre" | "subtitulo" | "descripcion">;
         Update: Partial<Omit<Proyecto, "id" | "created_at" | "updated_at">>;
         Relationships: [];

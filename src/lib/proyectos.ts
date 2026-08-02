@@ -16,11 +16,18 @@ function mapProyectoToProject(
     category: proyecto.categoria,
     description: proyecto.descripcion,
     coverImage: portada
-      ? { src: portada.url, alt: proyecto.nombre }
+      ? {
+          src: portada.url,
+          alt: proyecto.nombre,
+          focalX: portada.focal_x,
+          focalY: portada.focal_y,
+        }
       : { src: "", alt: proyecto.nombre },
     galleryImages: sorted.map((img) => ({
       src: img.url,
       alt: proyecto.nombre,
+      focalX: img.focal_x,
+      focalY: img.focal_y,
     })),
   };
 }

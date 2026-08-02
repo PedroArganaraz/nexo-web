@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./LogoutButton";
 
@@ -25,6 +26,8 @@ export default async function AdminLayout({
       )}
 
       <main className="max-w-5xl mx-auto px-6 py-12">{children}</main>
+
+      <Toaster position="top-center" richColors />
     </div>
   );
 }
