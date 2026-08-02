@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import type { Project } from '@/types'
+import ComparadorModal from './ComparadorModal'
 
 interface LightboxProps {
   project: Project
@@ -16,6 +17,7 @@ const EASE = [0.25, 0.1, 0.25, 1] as const
 export default function Lightbox({ project, onClose }: LightboxProps) {
   const [mounted, setMounted] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [showComparador, setShowComparador] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -49,13 +51,14 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
   const activeImage = project.galleryImages[activeIndex]
 
   return createPortal(
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
+    <>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80"
@@ -183,9 +186,26 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
           <p className="text-[#666666] text-sm leading-relaxed">
             {project.description}
           </p>
+
+          {project.comparisons && project.comparisons.length > 0 && (
+            <button
+              onClick={() => setShowComparador(true)}
+              className="mt-6 self-start bg-[#1a1a1a] text-white text-xs font-semibold uppercase tracking-widest px-6 py-3 rounded-full hover:bg-accent transition-colors duration-200"
+            >
+              Ver antes y después
+            </button>
+          )}
         </div>
       </motion.div>
-    </motion.div>,
+    </motion.div>
+
+    {showComparador && project.comparisons && (
+      <ComparadorModal
+        comparisons={project.comparisons}
+        onClose={() => setShowComparador(false)}
+      />
+    )}
+    </>,
     document.body
   )
 }

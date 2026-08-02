@@ -12,6 +12,11 @@ export interface ProjectImage {
   focalY?: number;
 }
 
+export interface ProjectComparison {
+  antesUrl: string;
+  despuesUrl: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -20,4 +25,5 @@ export interface Project {
   description: string;
   coverImage: ProjectImage;
   galleryImages: ProjectImage[];
+  comparisons?: ProjectComparison[];
 }

@@ -29,6 +29,17 @@ export type ProyectoImagen = {
   created_at: string;
 };
 
+export type ProyectoComparacion = {
+  id: string;
+  proyecto_id: string;
+  antes_url: string;
+  antes_path: string;
+  despues_url: string;
+  despues_path: string;
+  orden: number;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -68,6 +79,24 @@ export type Database = {
           Pick<Categoria, "nombre">;
         Update: Partial<Omit<Categoria, "id" | "created_at">>;
         Relationships: [];
+      };
+      proyecto_comparaciones: {
+        Row: ProyectoComparacion;
+        Insert: Partial<Omit<ProyectoComparacion, "id" | "created_at">> &
+          Pick<
+            ProyectoComparacion,
+            "proyecto_id" | "antes_url" | "antes_path" | "despues_url" | "despues_path"
+          >;
+        Update: Partial<Omit<ProyectoComparacion, "id" | "created_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_comparaciones_proyecto_id_fkey";
+            columns: ["proyecto_id"];
+            isOneToOne: false;
+            referencedRelation: "proyectos";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: Record<string, never>;

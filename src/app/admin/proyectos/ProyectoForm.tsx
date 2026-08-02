@@ -15,12 +15,18 @@ import {
 import {
   SortableContext,
   rectSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
-import type { Categoria, Proyecto, ProyectoImagen } from "@/types/database";
+import type {
+  Categoria,
+  Proyecto,
+  ProyectoComparacion,
+  ProyectoImagen,
+} from "@/types/database";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -30,7 +36,10 @@ const inputClass =
 const labelClass =
   "block text-xs uppercase tracking-widest text-text-secondary mb-1.5";
 
-type ProyectoConImagenes = Proyecto & { imagenes: ProyectoImagen[] };
+type ProyectoConRelaciones = Proyecto & {
+  imagenes: ProyectoImagen[];
+  comparaciones: ProyectoComparacion[];
+};
 
 type PendingImage = {
   id: string;
@@ -40,6 +49,24 @@ type PendingImage = {
   // Presente solo para imágenes nuevas (todavía no subidas a storage).
   // Su ausencia indica que la imagen ya existe en proyecto_imagenes.
   file?: File;
+};
+
+// --- Antes y Después ---------------------------------------------------
+// Sección independiente de "Imágenes": estado, tipos y lógica de guardado
+// propios, sin compartir nada con PendingImage/focal point.
+
+type ComparisonSlot = {
+  previewUrl: string;
+  // Presente solo si es una selección nueva todavía no subida a storage.
+  file?: File;
+};
+
+type PendingComparison = {
+  // id de la fila existente en proyecto_comparaciones, o un uuid local si
+  // el par todavía no fue guardado.
+  id: string;
+  antes: ComparisonSlot | null;
+  despues: ComparisonSlot | null;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -335,11 +362,202 @@ function FocalPointModal({
   );
 }
 
+function ComparisonSlotUpload({
+  label,
+  slot,
+  onSelect,
+  onClear,
+}: {
+  label: string;
+  slot: ComparisonSlot | null;
+  onSelect: (file: File) => void;
+  onClear: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onSelect(file);
+    e.target.value = "";
+  }
+
+  function handleDragEnter(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDraggingOver(true);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+  }
+
+  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) onSelect(file);
+  }
+
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-widest text-text-secondary mb-1.5">
+        {label}
+      </p>
+      <div
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="relative"
+      >
+        {slot ? (
+          <div className="relative aspect-[1080/672] bg-bg-alt rounded-sm overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={slot.previewUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <button
+              type="button"
+              onClick={onClear}
+              aria-label={`Quitar imagen ${label}`}
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-white/90 rounded-full text-text-secondary hover:text-red-600 shadow-sm cursor-pointer"
+            >
+              ×
+            </button>
+            {isDraggingOver && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-sm border-2 border-solid border-[#1a1a1a] bg-[#1a1a1a]/40 pointer-events-none">
+                <span className="text-xs font-medium text-white uppercase tracking-widest">
+                  Soltá para reemplazar
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className={`w-full aspect-[1080/672] flex items-center justify-center rounded-sm text-xs transition-colors duration-150 cursor-pointer ${
+              isDraggingOver
+                ? "border-2 border-solid border-[#1a1a1a] bg-[#1a1a1a]/15 text-[#1a1a1a] font-medium"
+                : "border-2 border-dashed border-[#999999] text-text-secondary hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+            }`}
+          >
+            {isDraggingOver
+              ? "Soltá la imagen acá"
+              : `+ Subir ${label.toLowerCase()}`}
+          </button>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleChange}
+        className="hidden"
+      />
+    </div>
+  );
+}
+
+function ComparisonBlock({
+  pair,
+  index,
+  onSelectFile,
+  onClearSlot,
+  onRemovePair,
+}: {
+  pair: PendingComparison;
+  index: number;
+  onSelectFile: (
+    pairId: string,
+    side: "antes" | "despues",
+    file: File
+  ) => void;
+  onClearSlot: (pairId: string, side: "antes" | "despues") => void;
+  onRemovePair: (pairId: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: pair.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border border-[#e0e0e0] rounded-sm p-4 bg-white"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <button
+            {...attributes}
+            {...listeners}
+            type="button"
+            className="p-1 text-text-secondary hover:text-[#1a1a1a] cursor-grab active:cursor-grabbing"
+            style={{ touchAction: "none" }}
+            aria-label="Reordenar par"
+          >
+            <DragHandleIcon />
+          </button>
+          <span className="text-xs uppercase tracking-widest text-text-secondary">
+            Par {index + 1}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onRemovePair(pair.id)}
+          className="text-xs text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer"
+        >
+          Eliminar par
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <ComparisonSlotUpload
+          label="Antes"
+          slot={pair.antes}
+          onSelect={(file) => onSelectFile(pair.id, "antes", file)}
+          onClear={() => onClearSlot(pair.id, "antes")}
+        />
+        <ComparisonSlotUpload
+          label="Después"
+          slot={pair.despues}
+          onSelect={(file) => onSelectFile(pair.id, "despues", file)}
+          onClear={() => onClearSlot(pair.id, "despues")}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ProyectoForm({
   proyecto,
   categorias,
 }: {
-  proyecto?: ProyectoConImagenes;
+  proyecto?: ProyectoConRelaciones;
   categorias: Categoria[];
 }) {
   const router = useRouter();
@@ -368,6 +586,16 @@ export default function ProyectoForm({
   const [editingImage, setEditingImage] = useState<PendingImage | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [comparisons, setComparisons] = useState<PendingComparison[]>(() =>
+    (proyecto?.comparaciones ?? [])
+      .slice()
+      .sort((a, b) => a.orden - b.orden)
+      .map((c) => ({
+        id: c.id,
+        antes: { previewUrl: c.antes_url },
+        despues: { previewUrl: c.despues_url },
+      }))
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -377,6 +605,10 @@ export default function ProyectoForm({
     return () => {
       images.forEach((image) => {
         if (image.file) URL.revokeObjectURL(image.previewUrl);
+      });
+      comparisons.forEach((pair) => {
+        if (pair.antes?.file) URL.revokeObjectURL(pair.antes.previewUrl);
+        if (pair.despues?.file) URL.revokeObjectURL(pair.despues.previewUrl);
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -478,7 +710,75 @@ export default function ProyectoForm({
     });
   }
 
-  async function handleUpdateExisting(existing: ProyectoConImagenes) {
+  function handleComparisonsDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setComparisons((prev) => {
+      const oldIndex = prev.findIndex((pair) => pair.id === active.id);
+      const newIndex = prev.findIndex((pair) => pair.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }
+
+  function handleAddComparison() {
+    setComparisons((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), antes: null, despues: null },
+    ]);
+  }
+
+  function handleComparisonFileChange(
+    pairId: string,
+    side: "antes" | "despues",
+    file: File
+  ) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error(
+        "Formato no soportado. Convertí la imagen a JPG o PNG antes de subir."
+      );
+      return;
+    }
+
+    setComparisons((prev) =>
+      prev.map((pair) => {
+        if (pair.id !== pairId) return pair;
+        const previousSlot = pair[side];
+        if (previousSlot?.file) URL.revokeObjectURL(previousSlot.previewUrl);
+        return {
+          ...pair,
+          [side]: { previewUrl: URL.createObjectURL(file), file },
+        };
+      })
+    );
+  }
+
+  function handleClearComparisonSlot(
+    pairId: string,
+    side: "antes" | "despues"
+  ) {
+    setComparisons((prev) =>
+      prev.map((pair) => {
+        if (pair.id !== pairId) return pair;
+        const slot = pair[side];
+        if (slot?.file) URL.revokeObjectURL(slot.previewUrl);
+        return { ...pair, [side]: null };
+      })
+    );
+  }
+
+  function handleRemoveComparison(pairId: string) {
+    setComparisons((prev) => {
+      const removed = prev.find((pair) => pair.id === pairId);
+      if (removed?.antes?.file) URL.revokeObjectURL(removed.antes.previewUrl);
+      if (removed?.despues?.file)
+        URL.revokeObjectURL(removed.despues.previewUrl);
+      return prev.filter((pair) => pair.id !== pairId);
+    });
+  }
+
+  async function handleUpdateExisting(existing: ProyectoConRelaciones) {
     setSaving(true);
     const supabase = createClient();
     const projectId = existing.id;
@@ -609,6 +909,192 @@ export default function ProyectoForm({
         }
       }
 
+      // --- Antes y Después: mismo patrón de diff que las imágenes, pero
+      // en su propio bloque independiente (estado, tabla y storage propios).
+      const initialComparisons = existing.comparaciones.map((c) => ({
+        id: c.id,
+        orden: c.orden,
+        antesPath: c.antes_path,
+        despuesPath: c.despues_path,
+      }));
+      const completeComparisons = comparisons.filter(
+        (pair) => pair.antes && pair.despues
+      );
+
+      // 1. Borrar pares que el usuario sacó del form (storage + fila)
+      const currentComparisonIds = new Set(
+        completeComparisons.map((pair) => pair.id)
+      );
+      const removedComparisons = initialComparisons.filter(
+        (c) => !currentComparisonIds.has(c.id)
+      );
+
+      if (removedComparisons.length > 0) {
+        const comparisonPathsToRemove = removedComparisons.flatMap((c) => [
+          c.antesPath,
+          c.despuesPath,
+        ]);
+        const { error: comparisonStorageError } = await supabase.storage
+          .from("proyectos")
+          .remove(comparisonPathsToRemove);
+        if (comparisonStorageError) {
+          console.error(comparisonStorageError);
+          errors.push(
+            "No se pudieron borrar del almacenamiento todos los pares 'Antes y Después' eliminados."
+          );
+        }
+
+        const { error: deleteComparisonRowsError } = await supabase
+          .from("proyecto_comparaciones")
+          .delete()
+          .in(
+            "id",
+            removedComparisons.map((c) => c.id)
+          );
+        if (deleteComparisonRowsError) {
+          console.error(deleteComparisonRowsError);
+          errors.push(
+            "No se pudieron borrar todas las filas de pares 'Antes y Después' eliminados."
+          );
+        }
+      }
+
+      // 2. Subir pares nuevos, y actualizar solo lo que cambió en los
+      //    existentes (una imagen reemplazada, u orden distinto).
+      for (let index = 0; index < completeComparisons.length; index++) {
+        const pair = completeComparisons[index];
+        const antes = pair.antes!;
+        const despues = pair.despues!;
+        const original = initialComparisons.find((c) => c.id === pair.id);
+
+        if (!original) {
+          try {
+            const antesExt = antes.file!.name.split(".").pop() || "jpg";
+            const antesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
+            const { error: antesUploadError } = await supabase.storage
+              .from("proyectos")
+              .upload(antesPath, antes.file!);
+            if (antesUploadError) throw antesUploadError;
+
+            const despuesExt = despues.file!.name.split(".").pop() || "jpg";
+            const despuesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
+            const { error: despuesUploadError } = await supabase.storage
+              .from("proyectos")
+              .upload(despuesPath, despues.file!);
+            if (despuesUploadError) throw despuesUploadError;
+
+            const {
+              data: { publicUrl: antesUrl },
+            } = supabase.storage.from("proyectos").getPublicUrl(antesPath);
+            const {
+              data: { publicUrl: despuesUrl },
+            } = supabase.storage.from("proyectos").getPublicUrl(despuesPath);
+
+            const { error: comparisonInsertError } = await supabase
+              .from("proyecto_comparaciones")
+              .insert({
+                proyecto_id: projectId,
+                antes_url: antesUrl,
+                antes_path: antesPath,
+                despues_url: despuesUrl,
+                despues_path: despuesPath,
+                orden: index,
+              });
+            if (comparisonInsertError) throw comparisonInsertError;
+          } catch (comparisonError) {
+            console.error(comparisonError);
+            errors.push(
+              "No se pudo subir uno de los pares 'Antes y Después' nuevos."
+            );
+          }
+          continue;
+        }
+
+        const updatePayload: {
+          antes_url?: string;
+          antes_path?: string;
+          despues_url?: string;
+          despues_path?: string;
+          orden?: number;
+        } = {};
+
+        if (antes.file) {
+          try {
+            const antesExt = antes.file.name.split(".").pop() || "jpg";
+            const antesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
+            const { error: antesUploadError } = await supabase.storage
+              .from("proyectos")
+              .upload(antesPath, antes.file);
+            if (antesUploadError) throw antesUploadError;
+
+            await supabase.storage
+              .from("proyectos")
+              .remove([original.antesPath]);
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("proyectos").getPublicUrl(antesPath);
+            updatePayload.antes_url = publicUrl;
+            updatePayload.antes_path = antesPath;
+          } catch (comparisonError) {
+            console.error(comparisonError);
+            errors.push(
+              `No se pudo actualizar la imagen "Antes" del par "Antes y Después" #${
+                index + 1
+              }.`
+            );
+          }
+        }
+
+        if (despues.file) {
+          try {
+            const despuesExt = despues.file.name.split(".").pop() || "jpg";
+            const despuesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
+            const { error: despuesUploadError } = await supabase.storage
+              .from("proyectos")
+              .upload(despuesPath, despues.file);
+            if (despuesUploadError) throw despuesUploadError;
+
+            await supabase.storage
+              .from("proyectos")
+              .remove([original.despuesPath]);
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("proyectos").getPublicUrl(despuesPath);
+            updatePayload.despues_url = publicUrl;
+            updatePayload.despues_path = despuesPath;
+          } catch (comparisonError) {
+            console.error(comparisonError);
+            errors.push(
+              `No se pudo actualizar la imagen "Después" del par "Antes y Después" #${
+                index + 1
+              }.`
+            );
+          }
+        }
+
+        if (original.orden !== index) {
+          updatePayload.orden = index;
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          const { error: comparisonUpdateError } = await supabase
+            .from("proyecto_comparaciones")
+            .update(updatePayload)
+            .eq("id", pair.id);
+
+          if (comparisonUpdateError) {
+            console.error(comparisonUpdateError);
+            errors.push(
+              `No se pudieron guardar todos los cambios del par "Antes y Después" #${
+                index + 1
+              }.`
+            );
+          }
+        }
+      }
+
       if (errors.length > 0) {
         toast.error(
           `El proyecto se actualizó, pero hubo problemas: ${Array.from(
@@ -631,6 +1117,19 @@ export default function ProyectoForm({
   async function handleSave() {
     if (!categoriaId || !nombre.trim()) {
       toast.error("Categoría y nombre son obligatorios.");
+      return;
+    }
+
+    const incompleteIndex = comparisons.findIndex(
+      (pair) => Boolean(pair.antes) !== Boolean(pair.despues)
+    );
+    if (incompleteIndex !== -1) {
+      const missing = comparisons[incompleteIndex].antes ? "Después" : "Antes";
+      toast.error(
+        `El par "Antes y Después" #${
+          incompleteIndex + 1
+        } está incompleto: falta la imagen "${missing}".`
+      );
       return;
     }
 
@@ -708,6 +1207,77 @@ export default function ProyectoForm({
         await supabase.from("proyecto_imagenes").delete().eq("proyecto_id", id);
         await supabase.from("proyectos").delete().eq("id", id);
         throw imagesError;
+      }
+
+      // --- Antes y Después: bloque independiente del de Imágenes de arriba
+      // (no se toca nada de lo anterior). Mismo criterio de todo-o-nada:
+      // si falla, se revierte también todo lo ya creado del proyecto.
+      const completeComparisons = comparisons.filter(
+        (pair) => pair.antes && pair.despues
+      );
+      const uploadedComparisonPaths: string[] = [];
+
+      try {
+        for (let index = 0; index < completeComparisons.length; index++) {
+          const pair = completeComparisons[index];
+          const antesFile = pair.antes!.file!;
+          const despuesFile = pair.despues!.file!;
+
+          const antesExt = antesFile.name.split(".").pop() || "jpg";
+          const antesPath = `${id}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
+          const { error: antesUploadError } = await supabase.storage
+            .from("proyectos")
+            .upload(antesPath, antesFile);
+          if (antesUploadError) throw antesUploadError;
+          uploadedComparisonPaths.push(antesPath);
+
+          const despuesExt = despuesFile.name.split(".").pop() || "jpg";
+          const despuesPath = `${id}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
+          const { error: despuesUploadError } = await supabase.storage
+            .from("proyectos")
+            .upload(despuesPath, despuesFile);
+          if (despuesUploadError) throw despuesUploadError;
+          uploadedComparisonPaths.push(despuesPath);
+
+          const {
+            data: { publicUrl: antesUrl },
+          } = supabase.storage.from("proyectos").getPublicUrl(antesPath);
+          const {
+            data: { publicUrl: despuesUrl },
+          } = supabase.storage.from("proyectos").getPublicUrl(despuesPath);
+
+          const { error: comparisonInsertError } = await supabase
+            .from("proyecto_comparaciones")
+            .insert({
+              proyecto_id: id,
+              antes_url: antesUrl,
+              antes_path: antesPath,
+              despues_url: despuesUrl,
+              despues_path: despuesPath,
+              orden: index,
+            });
+
+          if (comparisonInsertError) throw comparisonInsertError;
+        }
+      } catch (comparisonsError) {
+        // Rollback total: lo de comparaciones subido hasta ahora, las
+        // imágenes ya subidas, y el proyecto entero — misma política de
+        // todo-o-nada que ya usa la sección de Imágenes más arriba.
+        if (uploadedComparisonPaths.length > 0) {
+          await supabase.storage
+            .from("proyectos")
+            .remove(uploadedComparisonPaths);
+        }
+        if (uploadedPaths.length > 0) {
+          await supabase.storage.from("proyectos").remove(uploadedPaths);
+        }
+        await supabase
+          .from("proyecto_comparaciones")
+          .delete()
+          .eq("proyecto_id", id);
+        await supabase.from("proyecto_imagenes").delete().eq("proyecto_id", id);
+        await supabase.from("proyectos").delete().eq("id", id);
+        throw comparisonsError;
       }
 
       toast.success("Proyecto creado correctamente.");
@@ -870,6 +1440,48 @@ export default function ProyectoForm({
               </DndContext>
             </div>
           )}
+        </div>
+
+        <div className="border-t border-[#e0e0e0] pt-8">
+          <label className={labelClass}>Antes y Después</label>
+          <p className="text-xs text-text-secondary mb-4">
+            Pares de imágenes para mostrar transformaciones (opcional).
+          </p>
+
+          {comparisons.length > 0 && (
+            <DndContext
+              id="proyecto-form-comparisons-dnd"
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleComparisonsDragEnd}
+            >
+              <SortableContext
+                items={comparisons.map((pair) => pair.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-4 mb-4">
+                  {comparisons.map((pair, index) => (
+                    <ComparisonBlock
+                      key={pair.id}
+                      pair={pair}
+                      index={index}
+                      onSelectFile={handleComparisonFileChange}
+                      onClearSlot={handleClearComparisonSlot}
+                      onRemovePair={handleRemoveComparison}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+
+          <button
+            type="button"
+            onClick={handleAddComparison}
+            className="text-sm text-[#1a1a1a] font-medium border border-[#1a1a1a] rounded-full px-6 py-2.5 hover:bg-[#1a1a1a] hover:text-white transition-colors duration-200 cursor-pointer"
+          >
+            + Agregar par
+          </button>
         </div>
 
         <div className="flex items-center gap-4">

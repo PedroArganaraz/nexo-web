@@ -1,14 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Project } from "@/types";
-import type { Proyecto, ProyectoImagen } from "@/types/database";
+import type {
+  Proyecto,
+  ProyectoComparacion,
+  ProyectoImagen,
+} from "@/types/database";
 
 function mapProyectoToProject(
   proyecto: Proyecto,
   imagenes: ProyectoImagen[],
-  categoriaNombre: string
+  categoriaNombre: string,
+  comparaciones: ProyectoComparacion[]
 ): Project {
   const sorted = [...imagenes].sort((a, b) => a.orden - b.orden);
   const portada = sorted.find((img) => img.es_portada) ?? sorted[0];
+  const sortedComparaciones = [...comparaciones].sort(
+    (a, b) => a.orden - b.orden
+  );
 
   return {
     id: proyecto.id,
@@ -30,6 +38,13 @@ function mapProyectoToProject(
       focalX: img.focal_x,
       focalY: img.focal_y,
     })),
+    comparisons:
+      sortedComparaciones.length > 0
+        ? sortedComparaciones.map((c) => ({
+            antesUrl: c.antes_url,
+            despuesUrl: c.despues_url,
+          }))
+        : undefined,
   };
 }
 
@@ -57,6 +72,11 @@ export async function getProyectos(): Promise<Project[]> {
 
   const { data: categorias } = await supabase.from("categorias").select("*");
 
+  const { data: comparaciones } = await supabase
+    .from("proyecto_comparaciones")
+    .select("*")
+    .order("orden", { ascending: true });
+
   const categoriaPorId = new Map(
     (categorias ?? []).map((categoria) => [categoria.id, categoria.nombre])
   );
@@ -68,12 +88,20 @@ export async function getProyectos(): Promise<Project[]> {
     imagenesPorProyecto.set(imagen.proyecto_id, list);
   }
 
+  const comparacionesPorProyecto = new Map<string, ProyectoComparacion[]>();
+  for (const comparacion of comparaciones ?? []) {
+    const list = comparacionesPorProyecto.get(comparacion.proyecto_id) ?? [];
+    list.push(comparacion);
+    comparacionesPorProyecto.set(comparacion.proyecto_id, list);
+  }
+
   return proyectos.map((proyecto) =>
     mapProyectoToProject(
       proyecto,
       imagenesPorProyecto.get(proyecto.id) ?? [],
       (proyecto.categoria_id && categoriaPorId.get(proyecto.categoria_id)) ||
-        ""
+        "",
+      comparacionesPorProyecto.get(proyecto.id) ?? []
     )
   );
 }

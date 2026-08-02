@@ -27,11 +27,21 @@ export default async function EditarProyectoPage({
     .eq("proyecto_id", id)
     .order("orden", { ascending: true });
 
+  const { data: comparaciones } = await supabase
+    .from("proyecto_comparaciones")
+    .select("*")
+    .eq("proyecto_id", id)
+    .order("orden", { ascending: true });
+
   const categorias = await getCategorias();
 
   return (
     <ProyectoForm
-      proyecto={{ ...proyecto, imagenes: imagenes ?? [] }}
+      proyecto={{
+        ...proyecto,
+        imagenes: imagenes ?? [],
+        comparaciones: comparaciones ?? [],
+      }}
       categorias={categorias}
     />
   );
