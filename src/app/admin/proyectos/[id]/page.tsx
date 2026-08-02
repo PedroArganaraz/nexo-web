@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCategorias } from "@/lib/admin/categorias";
 import ProyectoForm from "../ProyectoForm";
 
 export default async function EditarProyectoPage({
@@ -26,5 +27,12 @@ export default async function EditarProyectoPage({
     .eq("proyecto_id", id)
     .order("orden", { ascending: true });
 
-  return <ProyectoForm proyecto={{ ...proyecto, imagenes: imagenes ?? [] }} />;
+  const categorias = await getCategorias();
+
+  return (
+    <ProyectoForm
+      proyecto={{ ...proyecto, imagenes: imagenes ?? [] }}
+      categorias={categorias}
+    />
+  );
 }

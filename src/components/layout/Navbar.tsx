@@ -71,7 +71,7 @@ export default function Navbar() {
           <a
             href="/admin/login"
             aria-label="Acceso administrador"
-            className="text-[#1a1a1a] hover:opacity-70 transition-opacity duration-300"
+            className={`transition-colors duration-300 hover:opacity-60 ${textColor}`}
           >
             <svg
               viewBox="0 0 20 20"

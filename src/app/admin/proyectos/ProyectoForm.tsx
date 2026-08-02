@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -19,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
-import type { Proyecto, ProyectoImagen } from "@/types/database";
+import type { Categoria, Proyecto, ProyectoImagen } from "@/types/database";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -43,6 +44,32 @@ type PendingImage = {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function ToggleSwitch({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      className={`relative w-9 h-5 rounded-full shrink-0 transition-colors duration-200 cursor-pointer ${
+        checked ? "bg-[#1a1a1a]" : "bg-[#e0e0e0]"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
 }
 
 function DragHandleIcon() {
@@ -310,18 +337,23 @@ function FocalPointModal({
 
 export default function ProyectoForm({
   proyecto,
+  categorias,
 }: {
   proyecto?: ProyectoConImagenes;
+  categorias: Categoria[];
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
   const isEditMode = Boolean(proyecto);
 
-  const [categoria, setCategoria] = useState(proyecto?.categoria ?? "");
+  const [categoriaId, setCategoriaId] = useState(
+    proyecto?.categoria_id ?? ""
+  );
   const [nombre, setNombre] = useState(proyecto?.nombre ?? "");
   const [subtitulo, setSubtitulo] = useState(proyecto?.subtitulo ?? "");
   const [descripcion, setDescripcion] = useState(proyecto?.descripcion ?? "");
+  const [activo, setActivo] = useState(proyecto?.activo ?? true);
   const [images, setImages] = useState<PendingImage[]>(() =>
     (proyecto?.imagenes ?? [])
       .slice()
@@ -468,10 +500,11 @@ export default function ProyectoForm({
       const { error: updateError } = await supabase
         .from("proyectos")
         .update({
-          categoria: categoria.trim(),
+          categoria_id: categoriaId,
           nombre: nombre.trim(),
           subtitulo: subtitulo.trim(),
           descripcion: descripcion.trim(),
+          activo,
         })
         .eq("id", projectId);
 
@@ -596,7 +629,7 @@ export default function ProyectoForm({
   }
 
   async function handleSave() {
-    if (!categoria.trim() || !nombre.trim()) {
+    if (!categoriaId || !nombre.trim()) {
       toast.error("Categoría y nombre son obligatorios.");
       return;
     }
@@ -622,11 +655,12 @@ export default function ProyectoForm({
 
       const { error: insertError } = await supabase.from("proyectos").insert({
         id,
-        categoria: categoria.trim(),
+        categoria_id: categoriaId,
         nombre: nombre.trim(),
         subtitulo: subtitulo.trim(),
         descripcion: descripcion.trim(),
         orden: nextOrden,
+        activo,
       });
 
       if (insertError) throw insertError;
@@ -699,13 +733,31 @@ export default function ProyectoForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Categoría *</label>
-              <input
-                type="text"
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                placeholder="Ej. Arquitectura residencial"
-                className={inputClass}
-              />
+              {categorias.length === 0 ? (
+                <p className="text-sm text-text-secondary">
+                  Todavía no hay categorías creadas.{" "}
+                  <Link
+                    href="/admin/categorias"
+                    className="text-[#1a1a1a] underline hover:no-underline"
+                  >
+                    Creá una acá
+                  </Link>{" "}
+                  antes de continuar.
+                </p>
+              ) : (
+                <select
+                  value={categoriaId}
+                  onChange={(e) => setCategoriaId(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {categorias.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className={labelClass}>Nombre *</label>
@@ -736,6 +788,20 @@ export default function ProyectoForm({
                 placeholder="Descripción del proyecto..."
                 className={`${inputClass} resize-none`}
               />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Estado</label>
+              <div className="flex items-center gap-3">
+                <ToggleSwitch
+                  checked={activo}
+                  onChange={() => setActivo((prev) => !prev)}
+                />
+                <span className="text-sm text-[#1a1a1a]">
+                  {activo
+                    ? "Publicado (visible en la web)"
+                    : "Oculto (no visible en la web)"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -810,7 +876,7 @@ export default function ProyectoForm({
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || categorias.length === 0}
             className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving
@@ -848,7 +914,8 @@ export default function ProyectoForm({
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-4">
             <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
-              {categoria || "Categoría"}
+              {categorias.find((cat) => cat.id === categoriaId)?.nombre ||
+                "Categoría"}
             </span>
             <span className="block font-helvetica font-semibold text-white text-base leading-snug uppercase tracking-wide">
               {nombre || "Nombre del proyecto"}

@@ -1,12 +1,20 @@
 export type Proyecto = {
   id: string;
   categoria: string;
+  categoria_id: string | null;
   nombre: string;
   subtitulo: string;
   descripcion: string;
   orden: number;
+  activo: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type Categoria = {
+  id: string;
+  nombre: string;
+  created_at: string;
 };
 
 export type ProyectoImagen = {
@@ -27,9 +35,17 @@ export type Database = {
       proyectos: {
         Row: Proyecto;
         Insert: Partial<Omit<Proyecto, "created_at" | "updated_at">> &
-          Pick<Proyecto, "categoria" | "nombre" | "subtitulo" | "descripcion">;
+          Pick<Proyecto, "nombre" | "subtitulo" | "descripcion">;
         Update: Partial<Omit<Proyecto, "id" | "created_at" | "updated_at">>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "proyectos_categoria_id_fkey";
+            columns: ["categoria_id"];
+            isOneToOne: false;
+            referencedRelation: "categorias";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       proyecto_imagenes: {
         Row: ProyectoImagen;
@@ -45,6 +61,13 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      categorias: {
+        Row: Categoria;
+        Insert: Partial<Omit<Categoria, "id" | "created_at">> &
+          Pick<Categoria, "nombre">;
+        Update: Partial<Omit<Categoria, "id" | "created_at">>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

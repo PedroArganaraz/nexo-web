@@ -39,14 +39,47 @@ function DragHandleIcon() {
   );
 }
 
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      disabled={disabled}
+      className={`relative w-9 h-5 rounded-full shrink-0 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        checked ? "bg-[#1a1a1a]" : "bg-[#e0e0e0]"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
 function ProyectoRow({
   proyecto,
   onDelete,
   isDeleting,
+  onToggleActivo,
+  isToggling,
 }: {
   proyecto: AdminProyecto;
   onDelete: (id: string) => void;
   isDeleting: boolean;
+  onToggleActivo: (id: string, activo: boolean) => void;
+  isToggling: boolean;
 }) {
   const {
     attributes,
@@ -82,7 +115,11 @@ function ProyectoRow({
         </button>
       </td>
       <td className="w-20 px-3 py-3">
-        <div className="relative w-14 h-14 bg-bg-alt overflow-hidden rounded-sm">
+        <div
+          className={`relative w-14 h-14 bg-bg-alt overflow-hidden rounded-sm transition-opacity duration-200 ${
+            proyecto.activo ? "" : "opacity-40"
+          }`}
+        >
           {proyecto.coverImage && (
             <Image
               src={proyecto.coverImage.src}
@@ -94,11 +131,35 @@ function ProyectoRow({
           )}
         </div>
       </td>
-      <td className="px-3 py-3 text-sm text-[#1a1a1a] font-medium">
+      <td
+        className={`px-3 py-3 text-sm text-[#1a1a1a] font-medium transition-opacity duration-200 ${
+          proyecto.activo ? "" : "opacity-40"
+        }`}
+      >
         {proyecto.nombre}
       </td>
-      <td className="px-3 py-3 text-sm text-text-secondary">
-        {proyecto.categoria}
+      <td
+        className={`px-3 py-3 text-sm text-text-secondary transition-opacity duration-200 ${
+          proyecto.activo ? "" : "opacity-40"
+        }`}
+      >
+        {proyecto.categoriaNombre}
+      </td>
+      <td className="px-3 py-3">
+        <div className="flex items-center justify-center gap-2">
+          <ToggleSwitch
+            checked={proyecto.activo}
+            onChange={() => onToggleActivo(proyecto.id, proyecto.activo)}
+            disabled={isToggling}
+          />
+          <span
+            className={`text-xs ${
+              proyecto.activo ? "text-text-secondary" : "text-red-600 font-medium"
+            }`}
+          >
+            {proyecto.activo ? "Activo" : "Inactivo"}
+          </span>
+        </div>
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center justify-center gap-2">
@@ -129,6 +190,7 @@ export default function ProyectosTable({
 }) {
   const [proyectos, setProyectos] = useState(initialProyectos);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -205,12 +267,40 @@ export default function ProyectosTable({
     setProyectos((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function handleToggleActivo(id: string, currentActivo: boolean) {
+    const nextActivo = !currentActivo;
+    const previous = proyectos;
+
+    setProyectos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, activo: nextActivo } : p))
+    );
+    setTogglingId(id);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("proyectos")
+      .update({ activo: nextActivo })
+      .eq("id", id);
+
+    setTogglingId(null);
+
+    if (error) {
+      setProyectos(previous);
+      window.alert("No se pudo actualizar el estado del proyecto.");
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-heading font-bold text-2xl text-[#1a1a1a]">
-          Proyectos
-        </h1>
+        <div>
+          <p className="text-sm text-text-secondary mb-1">
+            Panel de administración
+          </p>
+          <h1 className="font-heading font-bold text-2xl text-[#1a1a1a]">
+            Proyectos
+          </h1>
+        </div>
         <Link
           href="/admin/proyectos/nuevo"
           className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-6 py-2.5 rounded-full hover:bg-accent transition-colors duration-200"
@@ -241,6 +331,9 @@ export default function ProyectosTable({
                     Categoría
                   </th>
                   <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal text-center">
+                    Estado
+                  </th>
+                  <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal text-center">
                     Acciones
                   </th>
                 </tr>
@@ -256,6 +349,8 @@ export default function ProyectosTable({
                       proyecto={proyecto}
                       onDelete={handleDelete}
                       isDeleting={deletingId === proyecto.id}
+                      onToggleActivo={handleToggleActivo}
+                      isToggling={togglingId === proyecto.id}
                     />
                   ))}
                 </tbody>

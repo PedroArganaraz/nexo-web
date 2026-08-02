@@ -4,7 +4,8 @@ import type { Proyecto, ProyectoImagen } from "@/types/database";
 
 function mapProyectoToProject(
   proyecto: Proyecto,
-  imagenes: ProyectoImagen[]
+  imagenes: ProyectoImagen[],
+  categoriaNombre: string
 ): Project {
   const sorted = [...imagenes].sort((a, b) => a.orden - b.orden);
   const portada = sorted.find((img) => img.es_portada) ?? sorted[0];
@@ -13,7 +14,7 @@ function mapProyectoToProject(
     id: proyecto.id,
     title: proyecto.nombre,
     subtitle: proyecto.subtitulo,
-    category: proyecto.categoria,
+    category: categoriaNombre,
     description: proyecto.descripcion,
     coverImage: portada
       ? {
@@ -38,6 +39,7 @@ export async function getProyectos(): Promise<Project[]> {
   const { data: proyectos, error: proyectosError } = await supabase
     .from("proyectos")
     .select("*")
+    .eq("activo", true)
     .order("orden", { ascending: true });
 
   if (proyectosError || !proyectos || proyectos.length === 0) {
@@ -53,6 +55,12 @@ export async function getProyectos(): Promise<Project[]> {
     return [];
   }
 
+  const { data: categorias } = await supabase.from("categorias").select("*");
+
+  const categoriaPorId = new Map(
+    (categorias ?? []).map((categoria) => [categoria.id, categoria.nombre])
+  );
+
   const imagenesPorProyecto = new Map<string, ProyectoImagen[]>();
   for (const imagen of imagenes ?? []) {
     const list = imagenesPorProyecto.get(imagen.proyecto_id) ?? [];
@@ -61,6 +69,11 @@ export async function getProyectos(): Promise<Project[]> {
   }
 
   return proyectos.map((proyecto) =>
-    mapProyectoToProject(proyecto, imagenesPorProyecto.get(proyecto.id) ?? [])
+    mapProyectoToProject(
+      proyecto,
+      imagenesPorProyecto.get(proyecto.id) ?? [],
+      (proyecto.categoria_id && categoriaPorId.get(proyecto.categoria_id)) ||
+        ""
+    )
   );
 }
