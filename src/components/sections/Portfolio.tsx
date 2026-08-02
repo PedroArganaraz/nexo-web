@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import { projects } from '@/lib/data'
 import type { Project } from '@/types'
 import Lightbox from '@/components/ui/Lightbox'
 
@@ -63,7 +62,7 @@ function ProjectCard({
   )
 }
 
-export default function Portfolio() {
+export default function Portfolio({ projects }: { projects: Project[] }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)

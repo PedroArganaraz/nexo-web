@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(gh run *)",
+      "Bash(git commit *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(findstr LISTENING)",
+      "Bash(npx tsc *)",
+      "Read(//c/Users/Diego/**)"
+    ]
+  }
+}

@@ -9,8 +9,11 @@ import SobreNexo from "@/components/sections/SobreNexo";
 import Contacto from "@/components/sections/Contacto";
 import Footer from "@/components/layout/Footer";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
+import { getProyectos } from "@/lib/proyectos";
 
-export default function Home() {
+export default async function Home() {
+  const projects = await getProyectos();
+
   return (
     <>
       <Navbar />
@@ -20,7 +23,7 @@ export default function Home() {
         <SobreElEstudio />
         <Servicios />
         <Proceso />
-        <Portfolio />
+        <Portfolio projects={projects} />
         <SobreNexo />
         <Contacto />
       </main>
