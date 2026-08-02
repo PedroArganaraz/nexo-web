@@ -101,10 +101,10 @@ function ProyectoRow({
         {proyecto.categoria}
       </td>
       <td className="px-3 py-3">
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex items-center justify-center gap-2">
           <Link
             href={`/admin/proyectos/${proyecto.id}`}
-            className="text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200"
+            className="text-sm text-[#1a1a1a] font-medium border border-[#e0e0e0] rounded-full px-4 py-1.5 cursor-pointer hover:bg-[#1a1a1a] hover:text-white hover:border-[#1a1a1a] transition-colors duration-200"
           >
             Editar
           </Link>
@@ -112,7 +112,7 @@ function ProyectoRow({
             type="button"
             onClick={() => onDelete(proyecto.id)}
             disabled={isDeleting}
-            className="text-sm text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-sm text-red-600 border border-[#e0e0e0] rounded-full px-4 py-1.5 cursor-pointer hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </button>
@@ -240,7 +240,9 @@ export default function ProyectosTable({
                   <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal">
                     Categoría
                   </th>
-                  <th className="px-3 py-3" />
+                  <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal text-center">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <SortableContext

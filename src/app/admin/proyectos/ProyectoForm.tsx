@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import type { Proyecto, ProyectoImagen } from "@/types/database";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -28,12 +29,16 @@ const inputClass =
 const labelClass =
   "block text-xs uppercase tracking-widest text-text-secondary mb-1.5";
 
+type ProyectoConImagenes = Proyecto & { imagenes: ProyectoImagen[] };
+
 type PendingImage = {
   id: string;
-  file: File;
   previewUrl: string;
   focalX: number;
   focalY: number;
+  // Presente solo para imágenes nuevas (todavía no subidas a storage).
+  // Su ausencia indica que la imagen ya existe en proyecto_imagenes.
+  file?: File;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -116,18 +121,18 @@ function ImageCard({
           </span>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 p-2">
+      <div className="flex items-stretch">
         <button
           type="button"
           onClick={() => onEdit(image)}
-          className="text-xs text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer"
+          className="w-1/2 py-2 border border-[#e0e0e0] text-xs text-[#1a1a1a] font-medium hover:bg-bg-alt transition-colors duration-200 cursor-pointer"
         >
           Editar
         </button>
         <button
           type="button"
           onClick={() => onRemove(image.id)}
-          className="text-xs text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer"
+          className="w-1/2 py-2 border border-l-0 border-[#e0e0e0] text-xs text-red-600 hover:text-red-800 hover:bg-bg-alt transition-colors duration-200 cursor-pointer"
         >
           Eliminar
         </button>
@@ -237,16 +242,31 @@ function FocalPointModal({
   );
 }
 
-export default function ProyectoForm() {
+export default function ProyectoForm({
+  proyecto,
+}: {
+  proyecto?: ProyectoConImagenes;
+}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
+  const isEditMode = Boolean(proyecto);
 
-  const [categoria, setCategoria] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [subtitulo, setSubtitulo] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [images, setImages] = useState<PendingImage[]>([]);
+  const [categoria, setCategoria] = useState(proyecto?.categoria ?? "");
+  const [nombre, setNombre] = useState(proyecto?.nombre ?? "");
+  const [subtitulo, setSubtitulo] = useState(proyecto?.subtitulo ?? "");
+  const [descripcion, setDescripcion] = useState(proyecto?.descripcion ?? "");
+  const [images, setImages] = useState<PendingImage[]>(() =>
+    (proyecto?.imagenes ?? [])
+      .slice()
+      .sort((a, b) => a.orden - b.orden)
+      .map((img) => ({
+        id: img.id,
+        previewUrl: img.url,
+        focalX: img.focal_x,
+        focalY: img.focal_y,
+      }))
+  );
   const [editingImage, setEditingImage] = useState<PendingImage | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -257,7 +277,9 @@ export default function ProyectoForm() {
 
   useEffect(() => {
     return () => {
-      images.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      images.forEach((image) => {
+        if (image.file) URL.revokeObjectURL(image.previewUrl);
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -331,7 +353,7 @@ export default function ProyectoForm() {
   function handleRemove(id: string) {
     setImages((prev) => {
       const removed = prev.find((image) => image.id === id);
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      if (removed?.file) URL.revokeObjectURL(removed.previewUrl);
       return prev.filter((image) => image.id !== id);
     });
   }
@@ -358,9 +380,163 @@ export default function ProyectoForm() {
     });
   }
 
+  async function handleUpdateExisting(existing: ProyectoConImagenes) {
+    setSaving(true);
+    const supabase = createClient();
+    const projectId = existing.id;
+
+    // Snapshot de cómo estaban las imágenes existentes al cargar el form,
+    // para poder diffear contra el estado actual y evitar updates innecesarios.
+    const initialImages = existing.imagenes.map((img) => ({
+      id: img.id,
+      orden: img.orden,
+      esPortada: img.es_portada,
+      focalX: img.focal_x,
+      focalY: img.focal_y,
+      path: img.path,
+    }));
+
+    const errors: string[] = [];
+
+    try {
+      const { error: updateError } = await supabase
+        .from("proyectos")
+        .update({
+          categoria: categoria.trim(),
+          nombre: nombre.trim(),
+          subtitulo: subtitulo.trim(),
+          descripcion: descripcion.trim(),
+        })
+        .eq("id", projectId);
+
+      if (updateError) throw updateError;
+
+      // 1. Borrar imágenes que el usuario sacó del form (storage + fila)
+      const currentIds = new Set(images.map((img) => img.id));
+      const removedImages = initialImages.filter(
+        (img) => !currentIds.has(img.id)
+      );
+
+      if (removedImages.length > 0) {
+        const pathsToRemove = removedImages.map((img) => img.path);
+        const { error: storageError } = await supabase.storage
+          .from("proyectos")
+          .remove(pathsToRemove);
+        if (storageError) {
+          console.error(storageError);
+          errors.push(
+            "No se pudieron borrar del almacenamiento todas las imágenes eliminadas."
+          );
+        }
+
+        const { error: deleteRowsError } = await supabase
+          .from("proyecto_imagenes")
+          .delete()
+          .in(
+            "id",
+            removedImages.map((img) => img.id)
+          );
+        if (deleteRowsError) {
+          console.error(deleteRowsError);
+          errors.push(
+            "No se pudieron borrar todas las filas de imágenes eliminadas."
+          );
+        }
+      }
+
+      // 2. Subir imágenes nuevas, y actualizar orden/portada/focal point
+      //    de las existentes solo si algo cambió respecto a como estaban.
+      for (let index = 0; index < images.length; index++) {
+        const image = images[index];
+        const esPortada = index === 0;
+
+        if (image.file) {
+          try {
+            const extension = image.file.name.split(".").pop() || "jpg";
+            const path = `${projectId}/${crypto.randomUUID()}.${extension}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from("proyectos")
+              .upload(path, image.file);
+            if (uploadError) throw uploadError;
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("proyectos").getPublicUrl(path);
+
+            const { error: insertError } = await supabase
+              .from("proyecto_imagenes")
+              .insert({
+                proyecto_id: projectId,
+                url: publicUrl,
+                path,
+                orden: index,
+                es_portada: esPortada,
+                focal_x: image.focalX,
+                focal_y: image.focalY,
+              });
+            if (insertError) throw insertError;
+          } catch (imageError) {
+            console.error(imageError);
+            errors.push("No se pudo subir una de las imágenes nuevas.");
+          }
+        } else {
+          const original = initialImages.find((img) => img.id === image.id);
+          const changed =
+            !original ||
+            original.orden !== index ||
+            original.esPortada !== esPortada ||
+            original.focalX !== image.focalX ||
+            original.focalY !== image.focalY;
+
+          if (changed) {
+            const { error: updateImgError } = await supabase
+              .from("proyecto_imagenes")
+              .update({
+                orden: index,
+                es_portada: esPortada,
+                focal_x: image.focalX,
+                focal_y: image.focalY,
+              })
+              .eq("id", image.id);
+
+            if (updateImgError) {
+              console.error(updateImgError);
+              errors.push(
+                "No se pudieron guardar todos los cambios de orden o punto focal."
+              );
+            }
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        toast.error(
+          `El proyecto se actualizó, pero hubo problemas: ${Array.from(
+            new Set(errors)
+          ).join(" ")}`
+        );
+      } else {
+        toast.success("Cambios guardados correctamente.");
+      }
+
+      router.push("/admin/proyectos");
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudieron guardar los cambios. Intentá de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSave() {
     if (!categoria.trim() || !nombre.trim()) {
       toast.error("Categoría y nombre son obligatorios.");
+      return;
+    }
+
+    if (isEditMode && proyecto) {
+      await handleUpdateExisting(proyecto);
       return;
     }
 
@@ -394,12 +570,15 @@ export default function ProyectoForm() {
       try {
         for (let index = 0; index < images.length; index++) {
           const image = images[index];
-          const extension = image.file.name.split(".").pop() || "jpg";
+          // En modo creación todas las imágenes vienen de addFiles(), que
+          // siempre setea `file`.
+          const file = image.file!;
+          const extension = file.name.split(".").pop() || "jpg";
           const path = `${id}/${crypto.randomUUID()}.${extension}`;
 
           const { error: uploadError } = await supabase.storage
             .from("proyectos")
-            .upload(path, image.file);
+            .upload(path, file);
 
           if (uploadError) throw uploadError;
           uploadedPaths.push(path);
@@ -448,7 +627,7 @@ export default function ProyectoForm() {
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] mb-6">
-            Nuevo proyecto
+            {isEditMode ? "Editar proyecto" : "Nuevo proyecto"}
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -506,8 +685,8 @@ export default function ProyectoForm() {
             onDrop={handleDrop}
             className={`flex flex-col items-center justify-center gap-2 rounded-sm px-6 py-10 text-center cursor-pointer transition-colors duration-150 ${
               isDraggingOver
-                ? "border-2 border-solid border-[#1a1a1a] bg-bg-alt"
-                : "border border-dashed border-[#e0e0e0] hover:border-[#bbbbbb]"
+                ? "border-2 border-solid border-[#1a1a1a] bg-[#1a1a1a]/15"
+                : "border-2 border-dashed border-[#999999] hover:border-[#1a1a1a]"
             }`}
           >
             <span
@@ -568,7 +747,11 @@ export default function ProyectoForm() {
             disabled={saving}
             className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? "Guardando..." : "Guardar proyecto"}
+            {saving
+              ? "Guardando..."
+              : isEditMode
+              ? "Guardar cambios"
+              : "Guardar proyecto"}
           </button>
           <button
             type="button"
