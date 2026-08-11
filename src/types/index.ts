@@ -17,6 +17,8 @@ export interface ProjectComparison {
   despuesUrl: string;
 }
 
+export type ProjectStage = "proyecto" | "en_obra" | "ejecutado" | "sin_estado";
+
 export interface Project {
   id: string;
   title: string;
@@ -26,4 +28,6 @@ export interface Project {
   coverImage: ProjectImage;
   galleryImages: ProjectImage[];
   comparisons?: ProjectComparison[];
+  stage: ProjectStage;
+  year?: number;
 }

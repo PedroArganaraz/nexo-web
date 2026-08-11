@@ -1,3 +1,9 @@
+export type ProyectoEstado =
+  | "proyecto"
+  | "en_obra"
+  | "ejecutado"
+  | "sin_estado";
+
 export type Proyecto = {
   id: string;
   categoria: string;
@@ -7,6 +13,8 @@ export type Proyecto = {
   descripcion: string;
   orden: number;
   activo: boolean;
+  estado: ProyectoEstado;
+  anio: number | null;
   created_at: string;
   updated_at: string;
 };

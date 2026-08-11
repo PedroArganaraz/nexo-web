@@ -38,6 +38,8 @@ function mapProyectoToProject(
       focalX: img.focal_x,
       focalY: img.focal_y,
     })),
+    stage: proyecto.estado,
+    year: proyecto.anio ?? undefined,
     comparisons:
       sortedComparaciones.length > 0
         ? sortedComparaciones.map((c) => ({

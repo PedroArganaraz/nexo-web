@@ -25,6 +25,7 @@ import type {
   Categoria,
   Proyecto,
   ProyectoComparacion,
+  ProyectoEstado,
   ProyectoImagen,
 } from "@/types/database";
 
@@ -98,6 +99,88 @@ function ToggleSwitch({
     </button>
   );
 }
+
+function LampIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M10 2.5a5.5 5.5 0 0 0-3 10.1c.6.4 1 1.05 1 1.75V15h4v-.65c0-.7.4-1.35 1-1.75A5.5 5.5 0 0 0 10 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 17h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HammerIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <rect
+        x="9.5"
+        y="2.5"
+        width="8"
+        height="4"
+        rx="0.8"
+        transform="rotate(45 13.5 4.5)"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M10.5 7.5 4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M6.5 10.2l2.3 2.3 4.7-4.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function DashIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7 10h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3 h-3" aria-hidden="true">
+      <rect x="2.5" y="4" width="15" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function estadoBadgeIcon(value: ProyectoEstado) {
+  if (value === "en_obra") return <HammerIcon className="w-3 h-3" />;
+  if (value === "ejecutado") return <CheckIcon className="w-3 h-3" />;
+  return <LampIcon className="w-3 h-3" />;
+}
+
+const ESTADO_OPTIONS: {
+  value: ProyectoEstado;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { value: "sin_estado", label: "Sin estado", icon: DashIcon },
+  { value: "proyecto", label: "Proyecto", icon: LampIcon },
+  { value: "en_obra", label: "En obra", icon: HammerIcon },
+  { value: "ejecutado", label: "Ejecutado", icon: CheckIcon },
+];
 
 function DragHandleIcon() {
   return (
@@ -572,6 +655,10 @@ export default function ProyectoForm({
   const [subtitulo, setSubtitulo] = useState(proyecto?.subtitulo ?? "");
   const [descripcion, setDescripcion] = useState(proyecto?.descripcion ?? "");
   const [activo, setActivo] = useState(proyecto?.activo ?? true);
+  const [estado, setEstado] = useState<ProyectoEstado>(
+    proyecto?.estado ?? "sin_estado"
+  );
+  const [anio, setAnio] = useState<number | "">(proyecto?.anio ?? "");
   const [images, setImages] = useState<PendingImage[]>(() =>
     (proyecto?.imagenes ?? [])
       .slice()
@@ -805,6 +892,8 @@ export default function ProyectoForm({
           subtitulo: subtitulo.trim(),
           descripcion: descripcion.trim(),
           activo,
+          estado,
+          anio: anio === "" ? null : anio,
         })
         .eq("id", projectId);
 
@@ -1160,6 +1249,8 @@ export default function ProyectoForm({
         descripcion: descripcion.trim(),
         orden: nextOrden,
         activo,
+        estado,
+        anio: anio === "" ? null : anio,
       });
 
       if (insertError) throw insertError;
@@ -1349,6 +1440,45 @@ export default function ProyectoForm({
                 className={inputClass}
               />
             </div>
+            <div>
+              <label className={labelClass}>Año</label>
+              <input
+                type="number"
+                value={anio}
+                onChange={(e) =>
+                  setAnio(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                min={2000}
+                max={new Date().getFullYear() + 2}
+                step={1}
+                placeholder="Ej. 2026"
+                className={inputClass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Etapa</label>
+              <div className="grid grid-cols-4 gap-2">
+                {ESTADO_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEstado(opt.value)}
+                      aria-pressed={estado === opt.value}
+                      className={`flex flex-col items-center gap-1.5 py-3 rounded-sm border text-xs font-medium transition-colors duration-200 cursor-pointer ${
+                        estado === opt.value
+                          ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                          : "border-[#e0e0e0] text-text-secondary hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                      }`}
+                    >
+                      <Icon />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>Descripción</label>
               <textarea
@@ -1524,6 +1654,21 @@ export default function ProyectoForm({
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+          {anio && (
+            <span className="absolute top-4 left-4 inline-flex items-center gap-1 bg-black/60 text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full">
+              <CalendarIcon />
+              {anio}
+            </span>
+          )}
+
+          {estado !== "sin_estado" && (
+            <span className="absolute bottom-4 right-4 inline-flex items-center gap-1 bg-black/60 text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full">
+              {estadoBadgeIcon(estado)}
+              {ESTADO_OPTIONS.find((opt) => opt.value === estado)?.label}
+            </span>
+          )}
+
           <div className="absolute inset-x-0 bottom-0 p-4">
             <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
               {categorias.find((cat) => cat.id === categoriaId)?.nombre ||

@@ -20,6 +20,63 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import type { AdminProyecto } from "@/lib/admin/proyectos";
+import type { ProyectoEstado } from "@/types/database";
+
+const ESTADO_LABELS: Record<ProyectoEstado, string> = {
+  proyecto: "Proyecto",
+  en_obra: "En obra",
+  ejecutado: "Ejecutado",
+  sin_estado: "Sin estado",
+};
+
+function LampIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5" aria-hidden="true">
+      <path
+        d="M10 2.5a5.5 5.5 0 0 0-3 10.1c.6.4 1 1.05 1 1.75V15h4v-.65c0-.7.4-1.35 1-1.75A5.5 5.5 0 0 0 10 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 17h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BrickIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5" aria-hidden="true">
+      <rect x="2.5" y="7" width="15" height="6" rx="0.8" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M2.5 10h5M9.5 7v3M9.5 13v-3M12.5 10h5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5" aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M6.5 10.2l2.3 2.3 4.7-4.8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StageIcon({ estado }: { estado: ProyectoEstado }) {
+  if (estado === "en_obra") return <BrickIcon />;
+  if (estado === "ejecutado") return <CheckIcon />;
+  return <LampIcon />;
+}
 
 function DragHandleIcon() {
   return (
@@ -144,6 +201,23 @@ function ProyectoRow({
         }`}
       >
         {proyecto.categoriaNombre}
+      </td>
+      <td
+        className={`px-3 py-3 text-sm text-text-secondary transition-opacity duration-200 ${
+          proyecto.activo ? "" : "opacity-40"
+        }`}
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <StageIcon estado={proyecto.estado} />
+          {ESTADO_LABELS[proyecto.estado]}
+        </span>
+      </td>
+      <td
+        className={`px-3 py-3 text-sm text-text-secondary transition-opacity duration-200 ${
+          proyecto.activo ? "" : "opacity-40"
+        }`}
+      >
+        {proyecto.anio ?? "—"}
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center justify-center gap-2">
@@ -329,6 +403,12 @@ export default function ProyectosTable({
                   </th>
                   <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal">
                     Categoría
+                  </th>
+                  <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal">
+                    Etapa
+                  </th>
+                  <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal">
+                    Año
                   </th>
                   <th className="px-3 py-3 text-xs uppercase tracking-widest text-text-secondary font-normal text-center">
                     Estado

@@ -3,10 +3,79 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import type { Project } from '@/types'
+import type { Project, ProjectStage } from '@/types'
 import Lightbox from '@/components/ui/Lightbox'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
+
+const STAGE_LABELS: Record<ProjectStage, string> = {
+  proyecto: 'Proyecto',
+  en_obra: 'En obra',
+  ejecutado: 'Ejecutado',
+  sin_estado: 'Sin estado',
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3 h-3" aria-hidden="true">
+      <rect x="2.5" y="4" width="15" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function LampIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3 h-3" aria-hidden="true">
+      <path
+        d="M10 2.5a5.5 5.5 0 0 0-3 10.1c.6.4 1 1.05 1 1.75V15h4v-.65c0-.7.4-1.35 1-1.75A5.5 5.5 0 0 0 10 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 17h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function HammerIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3 h-3" aria-hidden="true">
+      <rect
+        x="9.5"
+        y="2.5"
+        width="8"
+        height="4"
+        rx="0.8"
+        transform="rotate(45 13.5 4.5)"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path d="M10.5 7.5 4 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="w-3 h-3" aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M6.5 10.2l2.3 2.3 4.7-4.8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function StageIcon({ stage }: { stage: ProjectStage }) {
+  if (stage === 'en_obra') return <HammerIcon />
+  if (stage === 'ejecutado') return <CheckIcon />
+  return <LampIcon />
+}
 
 function ProjectCard({
   project,
@@ -43,6 +112,22 @@ function ProjectCard({
 
       {/* Gradient overlay — siempre visible */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent transition-opacity duration-300 group-hover:opacity-80" />
+
+      {/* Año — esquina superior izquierda, solo si está cargado */}
+      {project.year && (
+        <span className="absolute top-4 left-4 inline-flex items-center gap-1 bg-black/60 text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full">
+          <CalendarIcon />
+          {project.year}
+        </span>
+      )}
+
+      {/* Etapa — esquina inferior derecha, oculto si es "sin_estado" */}
+      {project.stage !== 'sin_estado' && (
+        <span className="absolute bottom-4 right-4 inline-flex items-center gap-1 bg-black/60 text-white text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full">
+          <StageIcon stage={project.stage} />
+          {STAGE_LABELS[project.stage]}
+        </span>
+      )}
 
       {/* Caption — siempre visible */}
       <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
