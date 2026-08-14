@@ -48,6 +48,14 @@ export type ProyectoComparacion = {
   created_at: string;
 };
 
+export type Nota = {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -105,6 +113,13 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      notas: {
+        Row: Nota;
+        Insert: Partial<Omit<Nota, "id" | "created_at" | "updated_at">> &
+          Pick<Nota, "titulo">;
+        Update: Partial<Omit<Nota, "id" | "created_at" | "updated_at">>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
