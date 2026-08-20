@@ -343,7 +343,7 @@ export default function PortadaForm({
         Portada
       </h1>
       <p className="text-sm text-text-secondary mb-6">
-        Imagen principal del hero en la home pública.
+        Imagen principal en la home pública.
       </p>
 
       <div>
