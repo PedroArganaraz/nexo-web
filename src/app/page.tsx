@@ -10,15 +10,19 @@ import Contacto from "@/components/sections/Contacto";
 import Footer from "@/components/layout/Footer";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
 import { getProyectos } from "@/lib/proyectos";
+import { getHeroImage } from "@/lib/sitio-config";
 
 export default async function Home() {
-  const projects = await getProyectos();
+  const [projects, heroImage] = await Promise.all([
+    getProyectos(),
+    getHeroImage(),
+  ]);
 
   return (
     <>
       <Navbar />
       <main>
-        <Hero />
+        <Hero image={heroImage} />
         <NexoInteractive />
         <SobreElEstudio />
         <Servicios />

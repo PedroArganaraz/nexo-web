@@ -56,6 +56,15 @@ export type Nota = {
   updated_at: string;
 };
 
+export type SitioConfig = {
+  id: string;
+  hero_url: string | null;
+  hero_path: string | null;
+  hero_focal_x: number;
+  hero_focal_y: number;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -119,6 +128,13 @@ export type Database = {
         Insert: Partial<Omit<Nota, "id" | "created_at" | "updated_at">> &
           Pick<Nota, "titulo">;
         Update: Partial<Omit<Nota, "id" | "created_at" | "updated_at">>;
+        Relationships: [];
+      };
+      sitio_config: {
+        Row: SitioConfig;
+        // Fila única fija (id='default'): el upsert siempre especifica el id.
+        Insert: Partial<SitioConfig> & Pick<SitioConfig, "id">;
+        Update: Partial<Omit<SitioConfig, "id">>;
         Relationships: [];
       };
     };

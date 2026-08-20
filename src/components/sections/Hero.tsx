@@ -2,24 +2,37 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import type { HeroImage } from '@/lib/sitio-config'
 
 const FADE_UP = { opacity: 0, y: 20 }
 const FADE_IN = { opacity: 1, y: 0 }
+
+// Se usa si todavía no se cargó ninguna imagen en /admin/portada.
+const FALLBACK_IMAGE: HeroImage = {
+  src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
+  focalX: 50,
+  focalY: 50,
+}
 
 function fadeTransition(delay: number) {
   return { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] as const, delay }
 }
 
-export default function Hero() {
+export default function Hero({ image }: { image: HeroImage | null }) {
+  const heroImage = image ?? FALLBACK_IMAGE
+
   return (
     <section id="hero" className="relative h-screen w-full flex items-center">
       {/* Background image */}
       <Image
-        src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80"
+        src={heroImage.src}
         alt="Interior de arquitectura"
         fill
         priority
         className="object-cover"
+        style={{
+          objectPosition: `${heroImage.focalX}% ${heroImage.focalY}%`,
+        }}
       />
 
       {/* Overlay */}
