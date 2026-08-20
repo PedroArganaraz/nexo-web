@@ -347,7 +347,7 @@ export default function PortadaForm({
       </p>
 
       <div>
-        <label className={labelClass}>Imagen del hero</label>
+        <label className={labelClass}>Imagen de Portada</label>
 
         <div
           onDragEnter={handleDragEnter}
