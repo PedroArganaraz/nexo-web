@@ -28,10 +28,10 @@ export default function SobreNexo() {
       {/* Full-width image */}
       <div className="relative w-full h-[60vh] md:h-[85vh]">
         <Image
-          src="/images/equipo.png"
+          src="/images/equipo.jpg"
           alt="Alma, Cami y Lu — Nexo Estudio"
           fill
-          className="object-cover object-center md:object-[65%_center]"
+          className="object-cover object-center md:object-[65%_30%]"
           sizes="100vw"
         />
 
@@ -46,7 +46,7 @@ export default function SobreNexo() {
           className="hidden md:block absolute top-14 left-0 right-0 px-16 max-w-3xl"
         >
           <p className="font-helvetica text-white text-xl leading-relaxed">
-            Somos Alma, Cami y Lu. Amigas y arquitectas.
+            Somos Alma y Lu. Amigas y arquitectas.
           </p>
           <p className="font-helvetica text-white/85 text-lg leading-relaxed mt-4">
             Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
@@ -76,7 +76,7 @@ export default function SobreNexo() {
         className="md:hidden bg-[#1a1a1a] px-6 py-8"
       >
         <p className="font-helvetica text-white text-base leading-relaxed">
-          Somos Alma, Cami y Lu. Amigas y arquitectas.
+          Somos Alma y Lu. Amigas y arquitectas.
         </p>
         <p className="font-helvetica text-white/75 text-sm leading-relaxed mt-3">
           Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
