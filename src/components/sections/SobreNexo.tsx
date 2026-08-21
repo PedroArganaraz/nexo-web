@@ -13,13 +13,13 @@ export default function SobreNexo() {
   return (
     <section id="nosotras" className="scroll-mt-20">
       {/* Title */}
-      <div className="bg-bg-alt px-6 md:px-16 pt-16 pb-4">
+      <div className="bg-bg-alt pt-16 pb-4">
         <motion.h2
           ref={ref}
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: EASE }}
-          className="font-helvetica font-bold text-3xl md:text-4xl text-[#1a1a1a]"
+          className="max-w-7xl mx-auto px-6 font-helvetica font-bold text-3xl md:text-4xl text-[#1a1a1a]"
         >
           Sobre Nosotras
         </motion.h2>
@@ -43,16 +43,20 @@ export default function SobreNexo() {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, ease: EASE }}
-          className="hidden md:block absolute top-14 left-0 right-0 px-16 max-w-3xl"
+          className="hidden md:block absolute top-14 left-0 right-0"
         >
-          <p className="font-helvetica text-white text-xl leading-relaxed">
-            Somos Alma y Lu. Amigas y arquitectas.
-          </p>
-          <p className="font-helvetica text-white/85 text-lg leading-relaxed mt-4">
-            Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
-            Nos conocimos en la facultad y hoy seguimos eligiendo trabajar juntas, impulsadas por la
-            sensibilidad, la escucha y el diseño como forma de expresión.
-          </p>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="max-w-3xl">
+              <p className="font-helvetica text-white text-xl leading-relaxed">
+                Somos Alma y Lu. Amigas y arquitectas.
+              </p>
+              <p className="font-helvetica text-white/85 text-lg leading-relaxed mt-4">
+                Juntas formamos Nexo, un espacio que nace de nuestras ganas de hacer lo que nos apasiona.
+                Nos conocimos en la facultad y hoy seguimos eligiendo trabajar juntas, impulsadas por la
+                sensibilidad, la escucha y el diseño como forma de expresión.
+              </p>
+            </div>
+          </div>
         </motion.div>
 
         {/* Bottom text — solo desktop */}
@@ -60,11 +64,13 @@ export default function SobreNexo() {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, ease: EASE, delay: 0.2 }}
-          className="hidden md:block absolute bottom-14 left-0 right-0 px-16"
+          className="hidden md:block absolute bottom-14 left-0 right-0"
         >
-          <p className="font-helvetica text-white text-lg leading-relaxed">
-            El resultado final es solo una parte. Diseñamos todo lo que lo hace posible.
-          </p>
+          <div className="max-w-7xl mx-auto px-6">
+            <p className="font-helvetica text-white text-lg leading-relaxed">
+              El resultado final es solo una parte. Diseñamos todo lo que lo hace posible.
+            </p>
+          </div>
         </motion.div>
       </div>
 
