@@ -5,6 +5,7 @@ import SobreElEstudio from "@/components/sections/SobreElEstudio";
 import Servicios from "@/components/sections/Servicios";
 import Proceso from "@/components/sections/Proceso";
 import Portfolio from "@/components/sections/Portfolio";
+import InstagramCta from "@/components/sections/InstagramCta";
 import SobreNexo from "@/components/sections/SobreNexo";
 import Contacto from "@/components/sections/Contacto";
 import Footer from "@/components/layout/Footer";
@@ -28,6 +29,7 @@ export default async function Home() {
         <Servicios />
         <Proceso />
         <Portfolio projects={projects} />
+        <InstagramCta />
         <SobreNexo />
         <Contacto />
       </main>

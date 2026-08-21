@@ -13,7 +13,7 @@ export default function SobreNexo() {
   return (
     <section id="nosotras" className="scroll-mt-20">
       {/* Title */}
-      <div className="bg-white px-6 md:px-16 pt-16 pb-4">
+      <div className="bg-bg-alt px-6 md:px-16 pt-16 pb-4">
         <motion.h2
           ref={ref}
           initial={{ opacity: 0, y: 24 }}
