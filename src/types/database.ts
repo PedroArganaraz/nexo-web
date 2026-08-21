@@ -62,6 +62,10 @@ export type SitioConfig = {
   hero_path: string | null;
   hero_focal_x: number;
   hero_focal_y: number;
+  hero_mobile_focal_x: number;
+  hero_mobile_focal_y: number;
+  hero_zoom: number;
+  hero_mobile_zoom: number;
   updated_at: string;
 };
 

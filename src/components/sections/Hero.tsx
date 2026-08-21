@@ -12,6 +12,10 @@ const FALLBACK_IMAGE: HeroImage = {
   src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
   focalX: 50,
   focalY: 50,
+  zoom: 1,
+  mobileFocalX: 50,
+  mobileFocalY: 50,
+  mobileZoom: 1,
 }
 
 function fadeTransition(delay: number) {
@@ -23,15 +27,27 @@ export default function Hero({ image }: { image: HeroImage | null }) {
 
   return (
     <section id="hero" className="relative h-dvh w-full flex items-center">
-      {/* Background image */}
+      {/* Background image — versión mobile y desktop con su propio encuadre y zoom */}
       <Image
         src={heroImage.src}
         alt="Interior de arquitectura"
         fill
         priority
-        className="object-cover"
+        className="object-cover md:hidden"
+        style={{
+          objectPosition: `${heroImage.mobileFocalX}% ${heroImage.mobileFocalY}%`,
+          transform: `scale(${heroImage.mobileZoom})`,
+        }}
+      />
+      <Image
+        src={heroImage.src}
+        alt="Interior de arquitectura"
+        fill
+        priority
+        className="hidden object-cover md:block"
         style={{
           objectPosition: `${heroImage.focalX}% ${heroImage.focalY}%`,
+          transform: `scale(${heroImage.zoom})`,
         }}
       />
 

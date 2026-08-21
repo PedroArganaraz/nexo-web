@@ -435,7 +435,7 @@ function FocalPointModal({
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200 cursor-pointer"
+            className="text-sm text-[#1a1a1a] border border-[#1a1a1a] rounded-full px-6 py-2.5 hover:bg-[#1a1a1a] hover:text-white transition-colors duration-200 cursor-pointer"
           >
             Cancelar
           </button>
