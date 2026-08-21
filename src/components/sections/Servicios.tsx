@@ -44,12 +44,14 @@ function ServiceCard({
       initial={{ opacity: 0, y: 32 }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 }}
       transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: index * 0.12 }}
-      className="bg-white p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
+      className="bg-bg-alt p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
     >
       <h3 className="font-heading font-semibold text-lg text-[#1a1a1a] mb-3">
         {service.title}
       </h3>
-      <p className="text-text-secondary text-sm leading-relaxed">{service.description}</p>
+      <p className="text-text-secondary text-sm leading-relaxed">
+        {service.description}
+      </p>
     </motion.div>
   )
 }
@@ -61,7 +63,7 @@ export default function Servicios() {
   return (
     <section
       id="servicios"
-      className="bg-bg-alt scroll-mt-20"
+      className="bg-[#1a1a1a] scroll-mt-20"
     >
       <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
         {/* Section header */}
@@ -70,7 +72,7 @@ export default function Servicios() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const }}
-          className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-6"
+          className="font-heading font-bold text-3xl md:text-4xl text-white text-center mb-6"
         >
           Servicios
         </motion.h2>
@@ -79,7 +81,7 @@ export default function Servicios() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: 0.1 }}
-          className="text-text-secondary text-base leading-relaxed text-center max-w-2xl mx-auto mb-16"
+          className="text-white/60 text-base leading-relaxed text-center max-w-2xl mx-auto mb-16"
         >
           Nos importa tanto el proceso como el resultado.
           <br />
