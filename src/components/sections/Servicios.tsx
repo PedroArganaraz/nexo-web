@@ -46,7 +46,7 @@ function ServiceCard({
       transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: index * 0.12 }}
       className="bg-[#2e2e2d] p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
     >
-      <h3 className="font-heading font-semibold text-lg text-white mb-3">
+      <h3 className="font-helvetica font-semibold text-lg text-white mb-3">
         {service.title}
       </h3>
       <p className="text-white/60 text-sm leading-relaxed">
@@ -72,7 +72,7 @@ export default function Servicios() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const }}
-          className="font-heading font-bold text-3xl md:text-4xl text-white text-center mb-6"
+          className="font-helvetica font-bold text-3xl md:text-4xl text-white text-center mb-6"
         >
           Servicios
         </motion.h2>
@@ -81,11 +81,14 @@ export default function Servicios() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: 0.1 }}
-          className="text-white/60 text-base leading-relaxed text-center max-w-2xl mx-auto mb-16"
+          className="text-white/60 text-base leading-relaxed text-center max-w-4xl mx-auto mb-16"
         >
           Nos importa tanto el proceso como el resultado.
           <br />
-          Cada proyecto se desarrolla a partir de decisiones concretas que conectan diseño, técnica y ejecución.
+          <span className="md:whitespace-nowrap">
+            Cada proyecto se desarrolla a partir de decisiones concretas que
+            conectan diseño, técnica y ejecución.
+          </span>
         </motion.p>
 
         {/* Cards grid */}

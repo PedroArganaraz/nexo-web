@@ -180,7 +180,7 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
           <span className="text-xs tracking-widest uppercase text-[#666666] mb-2">
             {project.category}
           </span>
-          <h3 className="font-heading font-bold text-2xl md:text-3xl text-[#1a1a1a] mb-5">
+          <h3 className="font-helvetica font-bold text-2xl md:text-3xl text-[#1a1a1a] mb-5">
             {project.title}
           </h3>
           <p className="text-[#666666] text-sm leading-relaxed">

@@ -166,7 +166,7 @@ export default function Portfolio({ projects }: { projects: Project[] }) {
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-16"
+            className="font-helvetica font-bold text-3xl md:text-4xl text-[#1a1a1a] text-center mb-16"
           >
             Algunos proyectos
           </motion.h2>

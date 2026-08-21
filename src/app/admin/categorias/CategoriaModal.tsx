@@ -75,7 +75,7 @@ export default function CategoriaModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-sm w-full max-w-sm p-6">
-        <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-4">
+        <h2 className="font-helvetica font-bold text-lg text-[#1a1a1a] mb-4">
           {isEditMode ? "Editar categoría" : "Nueva categoría"}
         </h2>
 

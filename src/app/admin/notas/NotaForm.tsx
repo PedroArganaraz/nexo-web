@@ -112,7 +112,7 @@ export default function NotaForm({ nota }: { nota?: Nota }) {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] mb-6">
+      <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a] mb-6">
         {isEditMode ? "Editar nota" : "Nueva nota"}
       </h1>
 

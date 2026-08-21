@@ -69,7 +69,7 @@ export default function CategoriasTable({
           <p className="text-sm text-text-secondary mb-1">
             Panel de administración
           </p>
-          <h1 className="font-heading font-bold text-2xl text-[#1a1a1a]">
+          <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a]">
             Categorías
           </h1>
         </div>

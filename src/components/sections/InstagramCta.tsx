@@ -23,7 +23,7 @@ export default function InstagramCta() {
           <span className="block text-xs uppercase tracking-widest text-text-secondary mb-3">
             Instagram
           </span>
-          <h2 className="font-heading font-bold text-3xl md:text-5xl text-[#1a1a1a] mb-4">
+          <h2 className="font-helvetica font-bold text-3xl md:text-5xl text-[#1a1a1a] mb-4">
             Seguinos en @estudionexo_
           </h2>
           <p className="text-text-secondary text-base leading-relaxed max-w-lg">

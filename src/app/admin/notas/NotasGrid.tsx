@@ -82,7 +82,7 @@ export default function NotasGrid({
           <p className="text-sm text-text-secondary mb-1">
             Panel de administración
           </p>
-          <h1 className="font-heading font-bold text-2xl text-[#1a1a1a]">
+          <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a]">
             Notas
           </h1>
         </div>
@@ -105,7 +105,7 @@ export default function NotasGrid({
               className="flex flex-col bg-white border border-[#e0e0e0] rounded-sm p-5 cursor-pointer hover:border-[#1a1a1a] transition-colors duration-200"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="font-heading font-bold text-base text-[#1a1a1a] line-clamp-1">
+                <h2 className="font-helvetica font-bold text-base text-[#1a1a1a] line-clamp-1">
                   {nota.titulo}
                 </h2>
                 <button

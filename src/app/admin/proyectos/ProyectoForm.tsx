@@ -387,7 +387,7 @@ function FocalPointModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-1">
+        <h2 className="font-helvetica font-bold text-lg text-[#1a1a1a] mb-1">
           Ajustar recorte
         </h2>
         <p className="text-xs text-text-secondary mb-4">
@@ -1387,7 +1387,7 @@ export default function ProyectoForm({
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] mb-6">
+          <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a] mb-6">
             {isEditMode ? "Editar proyecto" : "Nuevo proyecto"}
           </h1>
 

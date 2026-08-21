@@ -266,7 +266,7 @@ function HeroFocalPointModal({
           <div className="flex flex-col sm:flex-row gap-6">
             {frame}
             <div className="flex flex-col w-64 sm:w-56 sm:justify-center">
-              <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-1">
+              <h2 className="font-helvetica font-bold text-lg text-[#1a1a1a] mb-1">
                 Ajustar posición
               </h2>
               <p className="text-xs text-text-secondary mb-4">{description}</p>
@@ -276,7 +276,7 @@ function HeroFocalPointModal({
           </div>
         ) : (
           <>
-            <h2 className="font-heading font-bold text-lg text-[#1a1a1a] mb-1">
+            <h2 className="font-helvetica font-bold text-lg text-[#1a1a1a] mb-1">
               Ajustar posición
             </h2>
             <p className="text-xs text-text-secondary mb-4">{description}</p>
@@ -458,7 +458,7 @@ export default function PortadaForm({
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] mb-1">
+      <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a] mb-1">
         Portada
       </h1>
       <p className="text-sm text-text-secondary mb-6">

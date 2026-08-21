@@ -25,7 +25,7 @@ export default function SobreElEstudio() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.6, ease: EASE }}
-          className="font-heading font-bold text-3xl md:text-4xl text-[#1a1a1a] mb-10"
+          className="font-helvetica font-bold text-3xl md:text-4xl text-[#1a1a1a] mb-10"
         >
           Sobre Nexo
         </motion.h2>

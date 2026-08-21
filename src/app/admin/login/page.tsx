@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-alt px-6">
       <div className="w-full max-w-sm bg-white border border-[#e0e0e0] rounded-sm p-8">
-        <h1 className="font-heading font-bold text-2xl text-[#1a1a1a] text-center mb-8">
+        <h1 className="font-helvetica font-bold text-2xl text-[#1a1a1a] text-center mb-8">
           Panel de administración
         </h1>
 
