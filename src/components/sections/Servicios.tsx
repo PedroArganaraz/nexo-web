@@ -44,12 +44,12 @@ function ServiceCard({
       initial={{ opacity: 0, y: 32 }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 }}
       transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const, delay: index * 0.12 }}
-      className="bg-bg-alt p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
+      className="bg-[#2e2e2d] p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
     >
-      <h3 className="font-heading font-semibold text-lg text-[#1a1a1a] mb-3">
+      <h3 className="font-heading font-semibold text-lg text-white mb-3">
         {service.title}
       </h3>
-      <p className="text-text-secondary text-sm leading-relaxed">
+      <p className="text-white/60 text-sm leading-relaxed">
         {service.description}
       </p>
     </motion.div>
