@@ -20,7 +20,7 @@ export default function SobreElEstudio() {
   return (
     <section className="bg-white">
       <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="max-w-3xl">
+        <div className="max-w-2xl">
           <motion.h2
             ref={ref}
             initial={{ opacity: 0, y: 24 }}
