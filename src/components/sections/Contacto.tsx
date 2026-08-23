@@ -117,7 +117,7 @@ export default function Contacto() {
 
   return (
     <section id="contacto" className="bg-bg-alt scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
+      <div className="max-w-7xl mx-auto px-6 pt-12 md:pt-16 pb-24 md:pb-32">
         <motion.h2
           ref={ref}
           initial={{ opacity: 0, y: 24 }}

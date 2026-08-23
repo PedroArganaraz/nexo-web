@@ -12,19 +12,6 @@ export default function SobreNexo() {
 
   return (
     <section id="nosotras" className="scroll-mt-20">
-      {/* Title */}
-      <div className="bg-bg-alt pt-16 pb-4">
-        <motion.h2
-          ref={ref}
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-          transition={{ duration: 0.6, ease: EASE }}
-          className="max-w-7xl mx-auto px-6 font-helvetica font-bold text-3xl md:text-4xl text-[#1a1a1a]"
-        >
-          Sobre Nosotras
-        </motion.h2>
-      </div>
-
       {/* Full-width image */}
       <div className="relative w-full h-[60vh] md:h-[85vh]">
         <Image
@@ -38,15 +25,19 @@ export default function SobreNexo() {
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/45" />
 
-        {/* Top text — solo desktop */}
+        {/* Título + texto — solo desktop */}
         <motion.div
+          ref={ref}
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, ease: EASE }}
-          className="hidden md:block absolute top-14 left-0 right-0"
+          className="absolute top-4 md:top-7 left-0 right-0"
         >
           <div className="max-w-7xl mx-auto px-6">
-            <div className="max-w-3xl">
+            <h2 className="font-helvetica font-bold text-3xl md:text-4xl text-white mb-4 md:mb-6">
+              Sobre Nosotras
+            </h2>
+            <div className="hidden md:block max-w-3xl">
               <p className="font-helvetica text-white text-xl leading-relaxed">
                 Somos Alma y Lu. Amigas y arquitectas.
               </p>
