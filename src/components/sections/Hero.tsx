@@ -26,7 +26,7 @@ export default function Hero({ image }: { image: HeroImage | null }) {
   const heroImage = image ?? FALLBACK_IMAGE
 
   return (
-    <section id="hero" className="relative h-dvh w-full flex items-center">
+    <section id="hero" className="relative h-dvh w-full flex items-center overflow-hidden">
       {/* Background image — versión mobile y desktop con su propio encuadre y zoom */}
       <Image
         src={heroImage.src}

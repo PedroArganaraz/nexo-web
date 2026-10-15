@@ -85,7 +85,7 @@ export default function Servicios() {
         >
           Nos importa tanto el proceso como el resultado.
           <br />
-          <span className="md:whitespace-nowrap">
+          <span className="lg:whitespace-nowrap">
             Cada proyecto se desarrolla a partir de decisiones concretas que
             conectan diseño, técnica y ejecución.
           </span>

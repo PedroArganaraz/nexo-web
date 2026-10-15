@@ -21,3 +21,120 @@ body {
   background: #ffffff;
   color: #1a1a1a;
 }
+
+/* Botón "Nexo Objects" del navbar.
+   En @layer components para que las utilidades de Tailwind (hidden, md:inline-flex,
+   paddings) sigan pudiendo sobreescribirlo. */
+@layer components {
+  .objects-btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    transition:
+      background-color 300ms ease,
+      border-color 300ms ease,
+      color 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  /* Destello diagonal que cruza el botón */
+  .objects-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      var(--objects-sheen) 50%,
+      transparent 70%
+    );
+    transform: translateX(-130%);
+    animation: objects-btn-sheen 3.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .objects-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  /* Sobre el hero: vidrio blanco translúcido */
+  .objects-btn--light {
+    --objects-sheen: rgba(255, 255, 255, 0.55);
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.35);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 14px 1px rgba(255, 255, 255, 0.3);
+    animation: objects-btn-glow-light 2.8s ease-in-out infinite;
+  }
+
+  .objects-btn--light:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+  }
+
+  /* Navbar con fondo blanco: pill oscura */
+  .objects-btn--dark {
+    --objects-sheen: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    background-color: #1a1a1a;
+    border-color: #1a1a1a;
+    box-shadow: 0 0 12px 1px rgba(26, 26, 26, 0.18);
+    animation: objects-btn-glow-dark 2.8s ease-in-out infinite;
+  }
+
+  .objects-btn--dark:hover {
+    background-color: #333333;
+    border-color: #333333;
+  }
+}
+
+@keyframes objects-btn-sheen {
+  0% {
+    transform: translateX(-130%);
+  }
+  35%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes objects-btn-glow-light {
+  0%,
+  100% {
+    box-shadow: 0 0 10px 0 rgba(255, 255, 255, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 22px 3px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes objects-btn-glow-dark {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 0 rgba(26, 26, 26, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 18px 2px rgba(26, 26, 26, 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objects-btn,
+  .objects-btn::after {
+    animation: none;
+  }
+
+  .objects-btn::after {
+    display: none;
+  }
+}
