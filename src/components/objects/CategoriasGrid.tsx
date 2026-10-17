@@ -45,6 +45,7 @@ function CategoriaCard({
               src={categoria.image.src}
               alt={categoria.image.alt}
               fill
+              loading={index < 3 ? 'eager' : 'lazy'}
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
               style={{
                 objectPosition: `${categoria.image.focalX ?? 50}% ${

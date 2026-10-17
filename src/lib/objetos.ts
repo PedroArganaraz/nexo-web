@@ -7,12 +7,6 @@ import type {
 } from "@/types";
 import type { Objeto, ObjetoCategoria, ObjetoImagen } from "@/types/database";
 
-export {
-  OBJETOS_BUCKET,
-  OBJETO_CATEGORIAS_CARPETA,
-  OBJETOS_CARPETA,
-} from "@/lib/objetos-constantes";
-
 export function elegirPortada<T extends Pick<ObjetoImagen, "orden" | "es_portada">>(
   imagenes: T[]
 ): T | undefined {

@@ -1,10 +1,11 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 const navLinks = [
-  { label: 'Servicios', href: '#servicios' },
-  { label: 'Trabajos', href: '#trabajos' },
-  { label: 'Nosotras', href: '#nosotras' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Servicios', href: '/#servicios' },
+  { label: 'Trabajos', href: '/#trabajos' },
+  { label: 'Nosotras', href: '/#nosotras' },
+  { label: 'Contacto', href: '/#contacto' },
 ]
 
 function InstagramIcon() {
@@ -49,7 +50,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10">
           {/* Logo + tagline */}
           <div className="flex flex-col gap-4">
-            <a href="#hero" className="hover:opacity-70 transition-opacity">
+            <Link href="/#hero" className="hover:opacity-70 transition-opacity">
               <Image
                 src="/images/NEXO_transparent.png"
                 alt="Nexo Estudio"
@@ -57,7 +58,7 @@ export default function Footer() {
                 height={40}
                 className="h-8 w-auto invert"
               />
-            </a>
+            </Link>
             <div className="text-sm text-white/50 leading-relaxed">
               <p>Arquitectura & Diseño de interiores</p>
               <p>Córdoba, Argentina</p>
@@ -67,13 +68,13 @@ export default function Footer() {
           {/* Nav links */}
           <nav className="flex flex-col gap-3" aria-label="Footer navigation">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="text-sm text-white/60 hover:text-white transition-colors duration-200 w-fit"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
