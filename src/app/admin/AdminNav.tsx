@@ -8,20 +8,21 @@ const links = [
   { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/notas", label: "Notas" },
   { href: "/admin/portada", label: "Portada" },
+  { href: "/admin/objects", label: "Nexo Objects" },
 ];
 
 export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-6">
+    <nav className="flex w-max items-center gap-6">
       {links.map((link) => {
         const isActive = pathname.startsWith(link.href);
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`text-sm transition-colors duration-200 ${
+            className={`flex min-h-10 items-center whitespace-nowrap text-sm transition-colors duration-200 md:min-h-0 ${
               isActive
                 ? "text-[#1a1a1a] font-semibold"
                 : "text-text-secondary hover:text-[#1a1a1a]"

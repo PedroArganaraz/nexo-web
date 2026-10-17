@@ -69,6 +69,42 @@ export type SitioConfig = {
   updated_at: string;
 };
 
+export type ObjetoCategoria = {
+  id: string;
+  nombre: string;
+  slug: string;
+  imagen_url: string | null;
+  imagen_path: string | null;
+  focal_x: number;
+  focal_y: number;
+  orden: number;
+  activo: boolean;
+  created_at: string;
+};
+
+export type Objeto = {
+  id: string;
+  categoria_id: string;
+  nombre: string;
+  descripcion: string;
+  orden: number;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ObjetoImagen = {
+  id: string;
+  objeto_id: string;
+  url: string;
+  path: string;
+  orden: number;
+  es_portada: boolean;
+  focal_x: number;
+  focal_y: number;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -140,6 +176,43 @@ export type Database = {
         Insert: Partial<SitioConfig> & Pick<SitioConfig, "id">;
         Update: Partial<Omit<SitioConfig, "id">>;
         Relationships: [];
+      };
+      objeto_categorias: {
+        Row: ObjetoCategoria;
+        Insert: Partial<Omit<ObjetoCategoria, "id" | "created_at">> &
+          Pick<ObjetoCategoria, "nombre" | "slug">;
+        Update: Partial<Omit<ObjetoCategoria, "id" | "created_at">>;
+        Relationships: [];
+      };
+      objetos: {
+        Row: Objeto;
+        Insert: Partial<Omit<Objeto, "created_at" | "updated_at">> &
+          Pick<Objeto, "categoria_id" | "nombre" | "descripcion">;
+        Update: Partial<Omit<Objeto, "id" | "created_at" | "updated_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "objetos_categoria_id_fkey";
+            columns: ["categoria_id"];
+            isOneToOne: false;
+            referencedRelation: "objeto_categorias";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      objeto_imagenes: {
+        Row: ObjetoImagen;
+        Insert: Partial<Omit<ObjetoImagen, "id" | "created_at">> &
+          Pick<ObjetoImagen, "objeto_id" | "url" | "path">;
+        Update: Partial<Omit<ObjetoImagen, "id" | "created_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "objeto_imagenes_objeto_id_fkey";
+            columns: ["objeto_id"];
+            isOneToOne: false;
+            referencedRelation: "objetos";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: Record<string, never>;

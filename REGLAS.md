@@ -9,7 +9,8 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 - **Next.js 16.2.4.** Antes de usar APIs de Next, leer la guía correspondiente en `node_modules/next/dist/docs/` (ver `AGENTS.md`).
 - **Verificación.** Al terminar cada paso, correr `npx tsc --noEmit` y `npx eslint` sobre los archivos tocados.
 - **Alcance.** Hacer solo lo que pide el paso actual. Si se detecta algo roto fuera del alcance, avisarlo al final en vez de arreglarlo sin que se pida.
-- **Cierre de cada paso.** Resumir qué se hizo, qué se verificó y qué tengo que ejecutar o revisar a mano (por ejemplo, SQL en Supabase).
+- **Cierre de cada paso.** Resumir qué se hizo, qué se verificó, qué no se pudo probar y qué tengo que ejecutar o revisar a mano (por ejemplo, SQL en Supabase).
+- **Código de cliente y de servidor.** Las constantes o helpers que usen tanto componentes cliente como servidor viven en archivos sin imports de servidor (`next/headers`, cliente de Supabase del servidor).
 
 ## Convenciones del proyecto
 
@@ -18,23 +19,45 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 - Las imágenes usan `unoptimized: true` en `next.config.ts` para evitar los límites de Vercel Image Optimization. No cambiarlo.
 - Los archivos HEIC se rechazan al subir, con un mensaje claro. No intentar convertirlos.
 - Las rutas de `/admin` están protegidas por `src/proxy.ts`. Las páginas públicas no pasan por ahí.
+- Las imágenes se guardan en el bucket `proyectos` de Supabase Storage. Las políticas del bucket no filtran por carpeta.
+- Al borrar un registro con imágenes, o reemplazar una imagen, borrar también el archivo de Storage.
 
 ## Nexo Objects
 
-Sección nueva del sitio, en `/objects`, para mostrar otro tipo de servicio o producto de diseño de interiores. Funciona como la sección Proyectos:
+Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseño de interiores. Funciona parecido a Proyectos:
 
-- Sin precios y sin pasarela de pago. Cada producto tiene un botón de consulta por WhatsApp.
-- Las dueñas administran todo desde `/admin`: crear y editar productos con imágenes y descripción, cambiar estado, crear categorías y definir el orden de las publicaciones.
+- Sin precios y sin pasarela de pago. Cada producto tiene un botón de consulta por WhatsApp, con el mensaje prellenado con el nombre del producto.
+- Las dueñas lo administran todo desde `/admin`: categorías, productos con sus imágenes y descripción, orden y estado.
 - Tablas propias: `objeto_categorias`, `objetos` y `objeto_imagenes`. No se mezclan con las de Proyectos.
-- Estados de un producto: `disponible`, `a_pedido`, `agotado`. El campo `activo` controla si está publicado.
 
-Orden de construcción:
+### Modelo
 
-1. Botón "Nexo Objects" en el navbar y página `/objects` con la estructura inicial.
-2. Base de datos, tipos y capa de datos.
-3. Grilla pública y detalle de cada producto con botón de WhatsApp.
-4. Admin: productos, categorías, orden y estado.
+- Categoría: nombre, slug (se genera una sola vez al crear y no cambia al renombrar), imagen con punto focal, orden y activo.
+- Producto: nombre, descripción, categoría (obligatoria), orden, activo e imágenes (con portada y punto focal).
+- El único estado es activo/inactivo. No hay etiqueta disponible/a pedido/agotado.
+- Una categoría con productos no se puede borrar.
+
+### Regla de visibilidad pública
+
+- Un producto se ve si está activo y su categoría está activa.
+- Una categoría se ve si está activa y tiene al menos un producto visible.
+- Si no hay ninguna categoría visible, `/objects` muestra "Próximamente".
+- La capa de datos aplica los filtros `activo = true` de forma explícita en el código. No depende solo de RLS, porque una persona logueada en el admin que navega el sitio público corre las consultas como usuario autenticado.
+
+### Rutas
+
+- Público: `/objects` (cards de categorías), `/objects/[slug]` (productos de la categoría; el producto abre en un modal con imágenes, descripción y botón de WhatsApp).
+- Admin: `/admin/objects/categorias` y `/admin/objects/productos`, con una sola entrada "Nexo Objects" en el menú del admin y pestañas dentro.
+
+### Orden de construcción
+
+0. SQL, tipos y capa de datos. Hecho.
+1. Admin: entrada "Nexo Objects", pestañas y header responsive.
+2. ABMC de categorías: imagen, orden, activo y compresor de imágenes (`src/lib/imagenes.ts`).
+3. ABMC de productos: varias imágenes, portada, orden dentro de la categoría y activo.
+4. Público: `/objects` con las cards de categorías.
+5. Público: `/objects/[slug]` con productos, modal y WhatsApp.
 
 ## Mejoras pendientes
 
-- **Compresor de imágenes al subirlas.** Cuando Nexo Objects ya esté avanzado, comprimir cada imagen en el navegador antes de subirla a Supabase, reduciendo peso y dimensiones sin pérdida de calidad visible. El objetivo es evitar costos inesperados de almacenamiento y tráfico en Supabase. Aplicar primero a Objects y evaluar extenderlo a Proyectos, Notas y portada.
+- **Compresor de imágenes en el resto del sitio.** El helper `comprimirImagen` se crea en el paso 2 y se usa en Objects. Evaluar aplicarlo también a Proyectos, Notas y Portada, para evitar costos inesperados de almacenamiento y tráfico en Supabase.

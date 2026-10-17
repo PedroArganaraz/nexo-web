@@ -22,9 +22,6 @@ body {
   color: #1a1a1a;
 }
 
-/* Botón "Nexo Objects" del navbar.
-   En @layer components para que las utilidades de Tailwind (hidden, md:inline-flex,
-   paddings) sigan pudiendo sobreescribirlo. */
 @layer components {
   .objects-btn {
     position: relative;
@@ -44,7 +41,6 @@ body {
       box-shadow 300ms ease;
   }
 
-  /* Destello diagonal que cruza el botón */
   .objects-btn::after {
     content: "";
     position: absolute;
@@ -66,7 +62,6 @@ body {
     outline-offset: 3px;
   }
 
-  /* Sobre el hero: vidrio blanco translúcido */
   .objects-btn--light {
     --objects-sheen: rgba(255, 255, 255, 0.55);
     color: #ffffff;
@@ -82,7 +77,6 @@ body {
     background-color: rgba(255, 255, 255, 0.22);
   }
 
-  /* Navbar con fondo blanco: pill oscura */
   .objects-btn--dark {
     --objects-sheen: rgba(255, 255, 255, 0.28);
     color: #ffffff;

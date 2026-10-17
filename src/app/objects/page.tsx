@@ -19,7 +19,6 @@ export default function ObjectsPage() {
             Nexo Objects
           </h1>
 
-          {/* Placeholder: acá va la grilla de productos */}
           <div className="mt-10 md:mt-16 rounded-2xl border border-dashed border-gray-200 bg-bg-alt px-6 py-20 md:py-28 flex items-center justify-center text-center">
             <p className="text-xl md:text-3xl tracking-[0.2em] uppercase text-text-secondary">
               Próximamente

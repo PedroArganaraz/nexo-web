@@ -13,7 +13,6 @@ const navLinks = [
   { label: 'Contacto', href: '#contacto' },
 ]
 
-// `solid`: para páginas sin hero oscuro. El navbar se ve siempre como "scrolled".
 export default function Navbar({ solid = false }: { solid?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -27,12 +26,10 @@ export default function Navbar({ solid = false }: { solid?: boolean }) {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
-  // Las anclas solo existen en la home; desde otras páginas apuntan a "/#..."
   const anchorHref = (href: string) => (isHome ? href : `/${href}`)
 
   function handleMobileNavClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
     setIsMobileMenuOpen(false)
-    // Fuera de la home dejamos que el link navegue normalmente
     if (!isHome) return
     e.preventDefault()
     // Wait for the close animation (250ms) before scrolling
@@ -113,7 +110,6 @@ export default function Navbar({ solid = false }: { solid?: boolean }) {
           </a>
         </nav>
 
-        {/* Mobile: botón Nexo Objects + hamburguesa */}
         <div className="md:hidden flex items-center gap-2">
           <Link
             href="/objects"

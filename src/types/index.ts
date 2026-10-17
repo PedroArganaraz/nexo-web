@@ -31,3 +31,22 @@ export interface Project {
   stage: ProjectStage;
   year?: number;
 }
+
+export interface ObjectCategory {
+  id: string;
+  name: string;
+  slug: string;
+  image: ProjectImage | null;
+}
+
+export interface NexoObject {
+  id: string;
+  name: string;
+  description: string;
+  coverImage: ProjectImage;
+  galleryImages: ProjectImage[];
+}
+
+export interface ObjectCategoryDetail extends ObjectCategory {
+  objects: NexoObject[];
+}
