@@ -16,12 +16,22 @@ export async function generateMetadata({
   const categoria = await getObjetoCategoriaPorSlug(slug);
 
   if (!categoria) {
-    return { title: "Nexo Objects | NEXO" };
+    return { title: "Nexo Objects" };
   }
 
+  const title = `${categoria.name} | Nexo Objects`;
+  const description = `${categoria.name}: objetos de diseño seleccionados por Nexo Estudio. Consultá por WhatsApp.`;
+
   return {
-    title: `${categoria.name} | Nexo Objects | NEXO`,
-    description: `${categoria.name}: objetos de diseño seleccionados por Nexo Estudio.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      ...(categoria.image
+        ? { images: [{ url: categoria.image.src, alt: categoria.name }] }
+        : {}),
+    },
   };
 }
 
@@ -46,19 +56,11 @@ export default async function ObjetoCategoriaPage({
             href="/objects"
             className="inline-flex min-h-10 items-center gap-2 text-sm text-text-secondary hover:text-[#1a1a1a] transition-colors duration-200"
           >
-            <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4" aria-hidden="true">
-              <path
-                d="M12 5l-5 5 5 5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <span aria-hidden="true">←</span>
             Nexo Objects
           </Link>
 
-          <h1 className="mt-4 mb-10 md:mb-14 font-helvetica font-bold text-[#1a1a1a] text-3xl md:text-5xl leading-tight break-words">
+          <h1 className="mt-4 mb-10 md:mb-16 font-helvetica font-bold text-[#1a1a1a] text-3xl md:text-4xl leading-tight break-words">
             {categoria.name}
           </h1>
 

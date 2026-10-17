@@ -93,7 +93,7 @@ function CategoriaRow({
       </button>
 
       <div
-        className={`relative w-14 h-14 bg-bg-alt overflow-hidden rounded-sm transition-opacity duration-200 ${dimClass}`}
+        className={`relative w-14 aspect-square bg-bg-alt overflow-hidden rounded-sm transition-opacity duration-200 ${dimClass}`}
       >
         {categoria.imagen_url && (
           <Image
