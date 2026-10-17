@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { elegirPortada } from "@/lib/objetos";
-import type { Objeto, ObjetoCategoria } from "@/types/database";
+import type { Objeto, ObjetoCategoria, ObjetoImagen } from "@/types/database";
 
 export type AdminObjetoCategoria = ObjetoCategoria & {
   totalObjetos: number;
@@ -8,8 +8,12 @@ export type AdminObjetoCategoria = ObjetoCategoria & {
 };
 
 export type AdminObjeto = Objeto & {
-  coverImage: { src: string; alt: string } | null;
+  coverImage: { src: string; alt: string; focalX: number; focalY: number } | null;
   categoriaNombre: string;
+};
+
+export type AdminObjetoConImagenes = Objeto & {
+  imagenes: ObjetoImagen[];
 };
 
 export async function getAdminObjetoCategorias(): Promise<
@@ -78,7 +82,7 @@ export async function getAdminObjetos(
 
   const { data: imagenes } = await supabase
     .from("objeto_imagenes")
-    .select("objeto_id, url, orden, es_portada")
+    .select("objeto_id, url, orden, es_portada, focal_x, focal_y")
     .in(
       "objeto_id",
       objetos.map((objeto) => objeto.id)
@@ -91,7 +95,10 @@ export async function getAdminObjetos(
 
   const imagenesPorObjeto = new Map<
     string,
-    { objeto_id: string; url: string; orden: number; es_portada: boolean }[]
+    Pick<
+      ObjetoImagen,
+      "objeto_id" | "url" | "orden" | "es_portada" | "focal_x" | "focal_y"
+    >[]
   >();
   for (const imagen of imagenes ?? []) {
     const list = imagenesPorObjeto.get(imagen.objeto_id) ?? [];
@@ -107,8 +114,43 @@ export async function getAdminObjetos(
     const portada = elegirPortada(imagenesPorObjeto.get(objeto.id) ?? []);
     return {
       ...objeto,
-      coverImage: portada ? { src: portada.url, alt: objeto.nombre } : null,
+      coverImage: portada
+        ? {
+            src: portada.url,
+            alt: objeto.nombre,
+            focalX: portada.focal_x,
+            focalY: portada.focal_y,
+          }
+        : null,
       categoriaNombre: categoriaPorId.get(objeto.categoria_id) ?? "Sin categoría",
     };
   });
+}
+
+export async function getAdminObjeto(
+  id: string
+): Promise<AdminObjetoConImagenes | null> {
+  const supabase = await createClient();
+
+  const { data: objeto, error: objetoError } = await supabase
+    .from("objetos")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (objetoError || !objeto) {
+    return null;
+  }
+
+  const { data: imagenes, error: imagenesError } = await supabase
+    .from("objeto_imagenes")
+    .select("*")
+    .eq("objeto_id", id)
+    .order("orden", { ascending: true });
+
+  if (imagenesError) {
+    return null;
+  }
+
+  return { ...objeto, imagenes: imagenes ?? [] };
 }

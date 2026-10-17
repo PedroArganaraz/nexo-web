@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   NexoObject,
@@ -100,7 +101,7 @@ export async function getObjetoCategoriasVisibles(): Promise<ObjectCategory[]> {
     .map(mapObjetoCategoriaToObjectCategory);
 }
 
-export async function getObjetoCategoriaPorSlug(
+export const getObjetoCategoriaPorSlug = cache(async function (
   slug: string
 ): Promise<ObjectCategoryDetail | null> {
   const supabase = await createClient();
@@ -153,4 +154,4 @@ export async function getObjetoCategoriaPorSlug(
       mapObjetoToNexoObject(objeto, imagenesPorObjeto.get(objeto.id) ?? [])
     ),
   };
-}
+});

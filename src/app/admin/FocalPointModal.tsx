@@ -8,14 +8,23 @@ function clamp(value: number, min: number, max: number) {
 
 type Size = { width: number; height: number };
 
+const MARCO_CLASES = {
+  "4/3": "max-w-md aspect-[4/3]",
+  "1/1": "max-w-sm aspect-square",
+} as const;
+
 export default function FocalPointModal({
   image,
   onSave,
   onCancel,
+  aspecto = "4/3",
+  nota,
 }: {
   image: { previewUrl: string; focalX: number; focalY: number };
   onSave: (focalX: number, focalY: number) => void;
   onCancel: () => void;
+  aspecto?: keyof typeof MARCO_CLASES;
+  nota?: string;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<{
@@ -111,6 +120,9 @@ export default function FocalPointModal({
           Arrastrá la imagen dentro del marco para elegir qué parte se ve
           siempre en los recortes.
         </p>
+        {nota && (
+          <p className="text-xs text-text-secondary -mt-2 mb-4">{nota}</p>
+        )}
 
         <div
           ref={frameRef}
@@ -118,7 +130,7 @@ export default function FocalPointModal({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className={`relative w-full max-w-md mx-auto aspect-[4/3] overflow-hidden bg-bg-alt rounded-sm select-none ${
+          className={`relative w-full mx-auto ${MARCO_CLASES[aspecto]} overflow-hidden bg-bg-alt rounded-sm select-none ${
             canDrag ? "cursor-grab active:cursor-grabbing" : ""
           }`}
           style={{ touchAction: "none" }}

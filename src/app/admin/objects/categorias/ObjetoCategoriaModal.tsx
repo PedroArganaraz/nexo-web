@@ -247,7 +247,7 @@ export default function ObjetoCategoriaModal({
               <span className={labelClass}>Imagen</span>
               {imagen ? (
                 <div>
-                  <div className="relative w-full aspect-[4/3] bg-bg-alt overflow-hidden rounded-sm">
+                  <div className="relative w-full aspect-square bg-bg-alt overflow-hidden rounded-sm">
                     <Image
                       src={imagen.previewUrl}
                       alt={nombre || "Imagen de la categoría"}
@@ -291,7 +291,7 @@ export default function ObjetoCategoriaModal({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={saving}
-                  className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-1 rounded-sm border-2 border-dashed border-[#999999] text-text-secondary hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full aspect-square flex flex-col items-center justify-center gap-1 rounded-sm border-2 border-dashed border-[#999999] text-text-secondary hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-sm text-[#1a1a1a]">Elegir imagen</span>
                   <span className="text-xs">JPG, PNG o WebP</span>
@@ -345,6 +345,8 @@ export default function ObjetoCategoriaModal({
           image={imagen}
           onSave={handleSaveFocalPoint}
           onCancel={() => setEditingFocal(false)}
+          aspecto="1/1"
+          nota="El marco es el recorte cuadrado de la tarjeta de la categoría."
         />
       )}
     </>

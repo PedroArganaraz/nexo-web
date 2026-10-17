@@ -21,7 +21,9 @@ import { createClient } from "@/lib/supabase/client";
 import { OBJETOS_BUCKET } from "@/lib/objetos-constantes";
 import type { AdminObjetoCategoria } from "@/lib/admin/objetos";
 import type { ObjetoCategoria } from "@/types/database";
+import DragHandleIcon from "../DragHandleIcon";
 import ToggleActivo from "../ToggleActivo";
+import { useRefreshOnMount } from "../useRefreshOnMount";
 import ObjetoCategoriaModal from "./ObjetoCategoriaModal";
 
 type ModalState =
@@ -39,24 +41,6 @@ const editButtonClass =
 
 const deleteButtonClass =
   "inline-flex min-h-10 items-center text-sm text-red-600 border border-[#e0e0e0] rounded-full px-4 py-1.5 cursor-pointer hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:min-h-0";
-
-function DragHandleIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      className="w-4 h-4"
-      aria-hidden="true"
-    >
-      <circle cx="7" cy="4" r="1.3" />
-      <circle cx="13" cy="4" r="1.3" />
-      <circle cx="7" cy="10" r="1.3" />
-      <circle cx="13" cy="10" r="1.3" />
-      <circle cx="7" cy="16" r="1.3" />
-      <circle cx="13" cy="16" r="1.3" />
-    </svg>
-  );
-}
 
 function CategoriaRow({
   categoria,
@@ -200,6 +184,8 @@ export default function ObjetoCategoriasTable({
   const [modalState, setModalState] = useState<ModalState | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  useRefreshOnMount();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
