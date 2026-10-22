@@ -43,6 +43,7 @@ export interface NexoObject {
   id: string;
   name: string;
   description: string;
+  price: number | null;
   coverImage: ProjectImage;
   galleryImages: ProjectImage[];
 }

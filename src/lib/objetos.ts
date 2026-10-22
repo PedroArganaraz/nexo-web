@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { normalizarPrecio } from "@/lib/precio";
 import type {
   NexoObject,
   ObjectCategory,
@@ -43,6 +44,7 @@ function mapObjetoToNexoObject(
     id: objeto.id,
     name: objeto.nombre,
     description: objeto.descripcion,
+    price: normalizarPrecio(objeto.precio),
     coverImage: portada
       ? {
           src: portada.url,

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import type { NexoObject } from '@/types'
 import { whatsappHref } from '@/lib/contacto'
+import { formatearPrecio } from '@/lib/precio'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -184,15 +185,22 @@ export default function ObjetoModal({
               </p>
             )}
 
-            <a
-              href={whatsappHref(mensaje)}
-              onClick={handleConsultar}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 md:mt-auto self-start inline-flex min-h-10 items-center bg-[#1a1a1a] text-white text-xs font-semibold uppercase tracking-widest px-6 py-3 rounded-full hover:bg-accent transition-colors duration-200"
-            >
-              Consultar por WhatsApp
-            </a>
+            <div className="mt-6 md:mt-auto flex flex-col items-start gap-4">
+              {objeto.price !== null && (
+                <p className="font-helvetica font-bold text-2xl md:text-3xl text-[#1a1a1a] break-words">
+                  Precio: {formatearPrecio(objeto.price)}
+                </p>
+              )}
+              <a
+                href={whatsappHref(mensaje)}
+                onClick={handleConsultar}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center bg-[#1a1a1a] text-white text-xs font-semibold uppercase tracking-widest px-6 py-3 rounded-full hover:bg-accent transition-colors duration-200"
+              >
+                Consultar por WhatsApp
+              </a>
+            </div>
           </div>
         </div>
       </motion.div>

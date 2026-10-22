@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +29,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagenes";
 import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
+import { PRECIO_MAXIMO, formatearNumero, formatearPrecio } from "@/lib/precio";
 import type { AdminObjetoConImagenes } from "@/lib/admin/objetos";
 import type { ObjetoCategoria, ObjetoImagen } from "@/types/database";
 import FocalPointModal from "@/app/admin/FocalPointModal";
@@ -50,6 +57,17 @@ type PendingImage = {
 };
 
 type Supabase = ReturnType<typeof createClient>;
+
+function precioDesdeDigitos(digitos: string): number | null {
+  return digitos === "" ? null : Number(digitos);
+}
+
+function precioValido(precio: number | null): boolean {
+  return (
+    precio === null ||
+    (Number.isInteger(precio) && precio > 0 && precio < PRECIO_MAXIMO)
+  );
+}
 
 function ImageCard({
   image,
@@ -180,6 +198,11 @@ export default function ObjetoForm({
   const [nombre, setNombre] = useState(objeto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(objeto?.descripcion ?? "");
   const [activo, setActivo] = useState(objeto?.activo ?? true);
+  const [precioDigitos, setPrecioDigitos] = useState(
+    objeto?.precio != null ? String(Math.round(objeto.precio)) : ""
+  );
+  const precioInputRef = useRef<HTMLInputElement>(null);
+  const caretDigitosRef = useRef<number | null>(null);
   const [images, setImages] = useState<PendingImage[]>(() =>
     (objeto?.imagenes ?? [])
       .slice()
@@ -209,6 +232,32 @@ export default function ObjetoForm({
     categoriaId ? `?categoria=${categoriaId}` : ""
   }`;
   const portadaId = coverId ?? images[0]?.id ?? null;
+
+  useLayoutEffect(() => {
+    const input = precioInputRef.current;
+    const digitos = caretDigitosRef.current;
+    caretDigitosRef.current = null;
+    if (!input || digitos === null || document.activeElement !== input) return;
+
+    let posicion = 0;
+    let vistos = 0;
+    while (posicion < input.value.length && vistos < digitos) {
+      if (/\d/.test(input.value[posicion])) vistos += 1;
+      posicion += 1;
+    }
+    input.setSelectionRange(posicion, posicion);
+  }, [precioDigitos]);
+
+  function handlePrecioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { value, selectionStart } = e.target;
+    const caret = selectionStart ?? value.length;
+    const digitosAntes = value.slice(0, caret).replace(/\D/g, "");
+    const ceros = digitosAntes.length - digitosAntes.replace(/^0+/, "").length;
+    const limpio = value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
+
+    caretDigitosRef.current = Math.min(digitosAntes.length - ceros, limpio.length);
+    setPrecioDigitos(limpio);
+  }
 
   useEffect(() => {
     const blobUrls = blobUrlsRef.current;
@@ -412,6 +461,7 @@ export default function ObjetoForm({
       categoria_id: categoriaId,
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
+      precio: precioDesdeDigitos(precioDigitos),
       activo,
       orden,
     });
@@ -465,6 +515,7 @@ export default function ObjetoForm({
         categoria_id: categoriaId,
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
+        precio: precioDesdeDigitos(precioDigitos),
         activo,
         orden,
       })
@@ -576,6 +627,13 @@ export default function ObjetoForm({
       return;
     }
 
+    if (!precioValido(precioDesdeDigitos(precioDigitos))) {
+      toast.error(
+        `El precio tiene que ser un número entero mayor a $0 y menor a ${formatearPrecio(PRECIO_MAXIMO)}. Dejalo vacío si no querés mostrar precio.`
+      );
+      return;
+    }
+
     if (activo && images.length === 0) {
       toast.error(
         "Un producto activo necesita al menos una imagen. Agregá una o desactivalo para guardarlo."
@@ -596,6 +654,7 @@ export default function ObjetoForm({
   }
 
   const sinImagenesActivo = activo && images.length === 0;
+  const precioFueraDeRango = !precioValido(precioDesdeDigitos(precioDigitos));
 
   return (
     <div className="max-w-3xl flex flex-col gap-8">
@@ -642,6 +701,43 @@ export default function ObjetoForm({
               placeholder="Ej. Lámpara"
               className={inputClass}
             />
+          </div>
+          <div>
+            <label htmlFor="objeto-precio" className={labelClass}>
+              Precio (opcional)
+            </label>
+            <div className="relative">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-secondary"
+              >
+                $
+              </span>
+              <input
+                id="objeto-precio"
+                ref={precioInputRef}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={
+                  precioDigitos === ""
+                    ? ""
+                    : formatearNumero(Number(precioDigitos))
+                }
+                onChange={handlePrecioChange}
+                placeholder="Ej. 150.000"
+                className={`${inputClass} pl-8`}
+              />
+            </div>
+            {precioFueraDeRango ? (
+              <p className="text-xs text-red-600 mt-1.5">
+                Tiene que ser menor a {formatearPrecio(PRECIO_MAXIMO)}.
+              </p>
+            ) : (
+              <p className="text-xs text-text-secondary mt-1.5">
+                Si lo dejás vacío, no se muestra precio.
+              </p>
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className={labelClass}>Descripción</label>

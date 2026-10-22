@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { elegirPortada } from "@/lib/objetos";
+import { normalizarPrecio } from "@/lib/precio";
 import type { Objeto, ObjetoCategoria, ObjetoImagen } from "@/types/database";
 
 export type AdminObjetoCategoria = ObjetoCategoria & {
@@ -114,6 +115,7 @@ export async function getAdminObjetos(
     const portada = elegirPortada(imagenesPorObjeto.get(objeto.id) ?? []);
     return {
       ...objeto,
+      precio: normalizarPrecio(objeto.precio),
       coverImage: portada
         ? {
             src: portada.url,
@@ -152,5 +154,9 @@ export async function getAdminObjeto(
     return null;
   }
 
-  return { ...objeto, imagenes: imagenes ?? [] };
+  return {
+    ...objeto,
+    precio: normalizarPrecio(objeto.precio),
+    imagenes: imagenes ?? [],
+  };
 }

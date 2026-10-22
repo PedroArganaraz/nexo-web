@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import { formatearPrecio } from "@/lib/precio";
 import {
   OBJETOS_BUCKET,
   TODAS_LAS_CATEGORIAS,
@@ -88,6 +89,13 @@ function ObjetoRowContent({
           className={`text-sm text-[#1a1a1a] font-medium break-words transition-opacity duration-200 ${dimClass}`}
         >
           {objeto.nombre}
+        </p>
+        <p
+          className={`mt-0.5 text-xs transition-opacity duration-200 ${
+            objeto.precio !== null ? "text-[#1a1a1a]" : "text-text-secondary"
+          } ${dimClass}`}
+        >
+          {objeto.precio !== null ? formatearPrecio(objeto.precio) : "Sin precio"}
         </p>
         {!objeto.coverImage && (
           <span className="inline-block mt-1 text-xs text-text-secondary bg-bg-alt rounded-full px-2 py-0.5">

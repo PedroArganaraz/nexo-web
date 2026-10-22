@@ -87,6 +87,7 @@ export type Objeto = {
   categoria_id: string;
   nombre: string;
   descripcion: string;
+  precio: number | null;
   orden: number;
   activo: boolean;
   created_at: string;

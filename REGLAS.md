@@ -26,7 +26,7 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 
 Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseño de interiores. Funciona parecido a Proyectos:
 
-- Sin precios y sin pasarela de pago. Cada producto tiene un botón de consulta por WhatsApp, con el mensaje prellenado con el nombre del producto.
+- Sin pasarela de pago. El precio es opcional e informativo, en pesos argentinos, y se muestra solo en la ficha del producto. Cada producto tiene un botón de consulta por WhatsApp, con el mensaje prellenado con el nombre del producto.
 - Las dueñas lo administran todo desde `/admin`: categorías, productos con sus imágenes y descripción, orden y estado.
 - Tablas propias: `objeto_categorias`, `objetos` y `objeto_imagenes`. No se mezclan con las de Proyectos.
 
@@ -36,6 +36,7 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 - Producto: nombre, descripción, categoría (obligatoria), orden, activo e imágenes (con portada y punto focal).
 - El único estado es activo/inactivo. No hay etiqueta disponible/a pedido/agotado.
 - Una categoría con productos no se puede borrar.
+- precio opcional (entero mayor a 0, o vacío)
 
 ### Regla de visibilidad pública
 
