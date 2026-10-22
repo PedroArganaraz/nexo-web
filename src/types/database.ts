@@ -103,6 +103,12 @@ export type Objeto = {
   updated_at: string;
 };
 
+export type ObjetoDatosInternos = {
+  objeto_id: string;
+  costo: number | null;
+  proveedor: string | null;
+};
+
 export type ObjetoImagen = {
   id: string;
   objeto_id: string;
@@ -212,6 +218,21 @@ export type Database = {
             columns: ["subcategoria_id"];
             isOneToOne: false;
             referencedRelation: "objeto_subcategorias";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      objeto_datos_internos: {
+        Row: ObjetoDatosInternos;
+        Insert: Partial<Omit<ObjetoDatosInternos, "objeto_id">> &
+          Pick<ObjetoDatosInternos, "objeto_id">;
+        Update: Partial<Omit<ObjetoDatosInternos, "objeto_id">>;
+        Relationships: [
+          {
+            foreignKeyName: "objeto_datos_internos_objeto_id_fkey";
+            columns: ["objeto_id"];
+            isOneToOne: true;
+            referencedRelation: "objetos";
             referencedColumns: ["id"];
           }
         ];

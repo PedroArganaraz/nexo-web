@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type DragEvent,
-} from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,7 +23,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagenes";
 import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
-import { PRECIO_MAXIMO, formatearNumero, formatearPrecio } from "@/lib/precio";
+import {
+  PRECIO_MAXIMO,
+  calcularBeneficio,
+  formatearImporte,
+  formatearPorcentaje,
+  formatearPrecio,
+  montoDesdeDigitos,
+  montoValido,
+} from "@/lib/precio";
 import type {
   AdminObjetoConImagenes,
   SubcategoriasPorCategoria,
@@ -38,6 +40,7 @@ import type { ObjetoCategoria, ObjetoImagen } from "@/types/database";
 import FocalPointModal from "@/app/admin/FocalPointModal";
 import DragHandleIcon from "../DragHandleIcon";
 import ToggleActivo from "../ToggleActivo";
+import MontoInput from "./MontoInput";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGENES = 8;
@@ -61,15 +64,17 @@ type PendingImage = {
 
 type Supabase = ReturnType<typeof createClient>;
 
-function precioDesdeDigitos(digitos: string): number | null {
-  return digitos === "" ? null : Number(digitos);
+const MAX_PROVEEDOR = 80;
+
+const ERROR_DATOS_INTERNOS =
+  "El producto se guardó, pero no se pudieron guardar los datos internos. Revisalos y tocá «Reintentar datos internos».";
+
+function limpiarTexto(texto: string): string {
+  return texto.trim().replace(/\s+/g, " ");
 }
 
-function precioValido(precio: number | null): boolean {
-  return (
-    precio === null ||
-    (Number.isInteger(precio) && precio > 0 && precio < PRECIO_MAXIMO)
-  );
+function digitosDesdeMonto(monto: number | null | undefined): string {
+  return monto != null ? String(Math.round(monto)) : "";
 }
 
 function ImageCard({
@@ -212,10 +217,15 @@ export default function ObjetoForm({
   const [descripcion, setDescripcion] = useState(objeto?.descripcion ?? "");
   const [activo, setActivo] = useState(objeto?.activo ?? true);
   const [precioDigitos, setPrecioDigitos] = useState(
-    objeto?.precio != null ? String(Math.round(objeto.precio)) : ""
+    digitosDesdeMonto(objeto?.precio)
   );
-  const precioInputRef = useRef<HTMLInputElement>(null);
-  const caretDigitosRef = useRef<number | null>(null);
+  const [costoDigitos, setCostoDigitos] = useState(
+    digitosDesdeMonto(objeto?.costo)
+  );
+  const [proveedor, setProveedor] = useState(objeto?.proveedor ?? "");
+  const [reintentoInternosId, setReintentoInternosId] = useState<
+    string | null
+  >(null);
   const [images, setImages] = useState<PendingImage[]>(() =>
     (objeto?.imagenes ?? [])
       .slice()
@@ -248,32 +258,6 @@ export default function ObjetoForm({
     categoriaId ? `?categoria=${categoriaId}` : ""
   }`;
   const portadaId = coverId ?? images[0]?.id ?? null;
-
-  useLayoutEffect(() => {
-    const input = precioInputRef.current;
-    const digitos = caretDigitosRef.current;
-    caretDigitosRef.current = null;
-    if (!input || digitos === null || document.activeElement !== input) return;
-
-    let posicion = 0;
-    let vistos = 0;
-    while (posicion < input.value.length && vistos < digitos) {
-      if (/\d/.test(input.value[posicion])) vistos += 1;
-      posicion += 1;
-    }
-    input.setSelectionRange(posicion, posicion);
-  }, [precioDigitos]);
-
-  function handlePrecioChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { value, selectionStart } = e.target;
-    const caret = selectionStart ?? value.length;
-    const digitosAntes = value.slice(0, caret).replace(/\D/g, "");
-    const ceros = digitosAntes.length - digitosAntes.replace(/^0+/, "").length;
-    const limpio = value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 12);
-
-    caretDigitosRef.current = Math.min(digitosAntes.length - ceros, limpio.length);
-    setPrecioDigitos(limpio);
-  }
 
   useEffect(() => {
     const blobUrls = blobUrlsRef.current;
@@ -459,6 +443,34 @@ export default function ObjetoForm({
     });
   }
 
+  async function guardarDatosInternos(
+    supabase: Supabase,
+    objetoId: string,
+    puedeHaberFila: boolean
+  ): Promise<boolean> {
+    const costo = montoDesdeDigitos(costoDigitos);
+    const proveedorLimpio = limpiarTexto(proveedor) || null;
+
+    if (costo === null && proveedorLimpio === null) {
+      if (!puedeHaberFila) return true;
+      const { error } = await supabase
+        .from("objeto_datos_internos")
+        .delete()
+        .eq("objeto_id", objetoId);
+      if (error) console.error(error);
+      return !error;
+    }
+
+    const { error } = await supabase
+      .from("objeto_datos_internos")
+      .upsert(
+        { objeto_id: objetoId, costo, proveedor: proveedorLimpio },
+        { onConflict: "objeto_id" }
+      );
+    if (error) console.error(error);
+    return !error;
+  }
+
   async function handleCreate() {
     const supabase = createClient();
     const id = crypto.randomUUID();
@@ -477,7 +489,7 @@ export default function ObjetoForm({
       categoria_id: categoriaId,
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
-      precio: precioDesdeDigitos(precioDigitos),
+      precio: montoDesdeDigitos(precioDigitos),
       subcategoria_id: subcategoriaId || null,
       activo,
       orden,
@@ -503,6 +515,12 @@ export default function ObjetoForm({
         toast.error("No se pudo crear el producto. Intentá de nuevo.");
         return;
       }
+    }
+
+    if (!(await guardarDatosInternos(supabase, id, false))) {
+      setReintentoInternosId(id);
+      toast.error(ERROR_DATOS_INTERNOS);
+      return;
     }
 
     toast.success("Producto creado.");
@@ -532,7 +550,7 @@ export default function ObjetoForm({
         categoria_id: categoriaId,
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
-        precio: precioDesdeDigitos(precioDigitos),
+        precio: montoDesdeDigitos(precioDigitos),
         subcategoria_id: subcategoriaId || null,
         activo,
         orden,
@@ -626,6 +644,22 @@ export default function ObjetoForm({
       }
     }
 
+    const internosGuardados = await guardarDatosInternos(
+      supabase,
+      existing.id,
+      existing.costo !== null || existing.proveedor !== null
+    );
+
+    if (!internosGuardados) {
+      setReintentoInternosId(existing.id);
+      toast.error(
+        errors.length > 0
+          ? `${ERROR_DATOS_INTERNOS} Además: ${Array.from(new Set(errors)).join(" ")}`
+          : ERROR_DATOS_INTERNOS
+      );
+      return;
+    }
+
     if (errors.length > 0) {
       toast.error(
         `El producto se actualizó, pero hubo problemas: ${Array.from(
@@ -639,7 +673,46 @@ export default function ObjetoForm({
     router.push(listHref);
   }
 
+  async function handleReintentarInternos(objetoId: string) {
+    setSaving(true);
+    try {
+      if (await guardarDatosInternos(createClient(), objetoId, true)) {
+        toast.success("Datos internos guardados.");
+        router.push(listHref);
+      } else {
+        toast.error(
+          "No se pudieron guardar los datos internos. Intentá de nuevo."
+        );
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function validarDatosInternos(): boolean {
+    if (!montoValido(montoDesdeDigitos(costoDigitos))) {
+      toast.error(
+        `El costo tiene que ser un número entero mayor a $0 y menor a ${formatearPrecio(PRECIO_MAXIMO)}. Dejalo vacío si no querés cargarlo.`
+      );
+      return false;
+    }
+
+    if (limpiarTexto(proveedor).length > MAX_PROVEEDOR) {
+      toast.error(`El proveedor puede tener hasta ${MAX_PROVEEDOR} caracteres.`);
+      return false;
+    }
+
+    return true;
+  }
+
   async function handleSave() {
+    if (reintentoInternosId) {
+      if (validarDatosInternos()) {
+        await handleReintentarInternos(reintentoInternosId);
+      }
+      return;
+    }
+
     if (!categoriaId || !nombre.trim()) {
       toast.error("Categoría y nombre son obligatorios.");
       return;
@@ -655,12 +728,14 @@ export default function ObjetoForm({
       return;
     }
 
-    if (!precioValido(precioDesdeDigitos(precioDigitos))) {
+    if (!montoValido(montoDesdeDigitos(precioDigitos))) {
       toast.error(
         `El precio tiene que ser un número entero mayor a $0 y menor a ${formatearPrecio(PRECIO_MAXIMO)}. Dejalo vacío si no querés mostrar precio.`
       );
       return;
     }
+
+    if (!validarDatosInternos()) return;
 
     if (activo && images.length === 0) {
       toast.error(
@@ -682,7 +757,14 @@ export default function ObjetoForm({
   }
 
   const sinImagenesActivo = activo && images.length === 0;
-  const precioFueraDeRango = !precioValido(precioDesdeDigitos(precioDigitos));
+  const precio = montoDesdeDigitos(precioDigitos);
+  const costo = montoDesdeDigitos(costoDigitos);
+  const precioFueraDeRango = !montoValido(precio);
+  const costoFueraDeRango = !montoValido(costo);
+  const resumen =
+    precioFueraDeRango || costoFueraDeRango
+      ? null
+      : calcularBeneficio(precio, costo);
 
   return (
     <div className="max-w-3xl flex flex-col gap-8">
@@ -757,29 +839,13 @@ export default function ObjetoForm({
             <label htmlFor="objeto-precio" className={labelClass}>
               Precio (opcional)
             </label>
-            <div className="relative">
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-secondary"
-              >
-                $
-              </span>
-              <input
-                id="objeto-precio"
-                ref={precioInputRef}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={
-                  precioDigitos === ""
-                    ? ""
-                    : formatearNumero(Number(precioDigitos))
-                }
-                onChange={handlePrecioChange}
-                placeholder="Ej. 150.000"
-                className={`${inputClass} pl-8`}
-              />
-            </div>
+            <MontoInput
+              id="objeto-precio"
+              digitos={precioDigitos}
+              onChange={setPrecioDigitos}
+              placeholder="Ej. 150.000"
+              className={inputClass}
+            />
             {precioFueraDeRango ? (
               <p className="text-xs text-red-600 mt-1.5">
                 Tiene que ser menor a {formatearPrecio(PRECIO_MAXIMO)}.
@@ -911,6 +977,83 @@ export default function ObjetoForm({
         )}
       </div>
 
+      <section
+        aria-labelledby="datos-internos-titulo"
+        className="border-t border-[#e0e0e0] pt-8"
+      >
+        <h3
+          id="datos-internos-titulo"
+          className="font-helvetica font-bold text-base text-[#1a1a1a]"
+        >
+          Datos internos
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="objeto-costo" className={labelClass}>
+              Costo (opcional)
+            </label>
+            <MontoInput
+              id="objeto-costo"
+              digitos={costoDigitos}
+              onChange={setCostoDigitos}
+              placeholder="Ej. 100.000"
+              className={inputClass}
+            />
+            {costoFueraDeRango && (
+              <p className="text-xs text-red-600 mt-1.5">
+                Tiene que ser menor a {formatearPrecio(PRECIO_MAXIMO)}.
+              </p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="objeto-proveedor" className={labelClass}>
+              Proveedor (opcional)
+            </label>
+            <input
+              id="objeto-proveedor"
+              type="text"
+              value={proveedor}
+              onChange={(e) => setProveedor(e.target.value)}
+              maxLength={MAX_PROVEEDOR}
+              autoComplete="off"
+              placeholder="Ej. Taller de madera"
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2 rounded-sm border border-[#e0e0e0] bg-white px-4 py-3">
+            <p
+              aria-live="polite"
+              className={`text-sm break-words ${
+                resumen
+                  ? resumen.beneficio < 0
+                    ? "text-red-600 font-medium"
+                    : "text-[#1a1a1a] font-medium"
+                  : "text-text-secondary"
+              }`}
+            >
+              {resumen
+                ? `Beneficio: ${formatearImporte(resumen.beneficio)} · Margen: ${formatearPorcentaje(resumen.margen)}`
+                : "Cargá precio y costo para ver el beneficio"}
+            </p>
+            <p className="text-xs text-text-secondary mt-1">
+              Margen = beneficio ÷ precio de venta
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {reintentoInternosId && (
+        <p
+          role="alert"
+          className="rounded-sm border border-red-600 bg-white px-4 py-3 text-sm text-red-600"
+        >
+          El producto ya se guardó, pero faltan los datos internos. Revisá costo
+          y proveedor y tocá «Reintentar datos internos». El resto de los
+          cambios no se vuelve a guardar.
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-4">
         <button
           type="button"
@@ -920,9 +1063,11 @@ export default function ObjetoForm({
         >
           {saving
             ? "Guardando..."
-            : isEditMode
-              ? "Guardar cambios"
-              : "Guardar producto"}
+            : reintentoInternosId
+              ? "Reintentar datos internos"
+              : isEditMode
+                ? "Guardar cambios"
+                : "Guardar producto"}
         </button>
         <button
           type="button"

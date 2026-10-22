@@ -20,7 +20,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
-import { formatearPrecio } from "@/lib/precio";
+import {
+  calcularBeneficio,
+  formatearImporte,
+  formatearPorcentaje,
+  formatearPrecio,
+} from "@/lib/precio";
 import {
   OBJETOS_BUCKET,
   TODAS_LAS_CATEGORIAS,
@@ -62,6 +67,7 @@ function ObjetoRowContent({
   handle: React.ReactNode;
 }) {
   const dimClass = objeto.activo ? "" : "opacity-40";
+  const beneficio = calcularBeneficio(objeto.precio, objeto.costo);
 
   return (
     <>
@@ -97,6 +103,16 @@ function ObjetoRowContent({
         >
           {objeto.precio !== null ? formatearPrecio(objeto.precio) : "Sin precio"}
         </p>
+        {beneficio && (
+          <p
+            className={`mt-0.5 text-xs transition-opacity duration-200 ${
+              beneficio.beneficio < 0 ? "text-red-600" : "text-text-secondary"
+            } ${dimClass}`}
+          >
+            Beneficio: {formatearImporte(beneficio.beneficio)} (
+            {formatearPorcentaje(beneficio.margen)})
+          </p>
+        )}
         {!objeto.coverImage && (
           <span className="inline-block mt-1 text-xs text-text-secondary bg-bg-alt rounded-full px-2 py-0.5">
             Sin imágenes

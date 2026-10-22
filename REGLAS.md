@@ -21,6 +21,7 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 - Las rutas de `/admin` están protegidas por `src/proxy.ts`. Las páginas públicas no pasan por ahí.
 - Las imágenes se guardan en el bucket `proyectos` de Supabase Storage. Las políticas del bucket no filtran por carpeta.
 - Al borrar un registro con imágenes, o reemplazar una imagen, borrar también el archivo de Storage.
+- Cualquier dato privado del negocio (costos, proveedores, márgenes) va en tablas sin acceso para anon, nunca como columna de una tabla que el sitio público lee.
 
 ## Nexo Objects
 
@@ -37,8 +38,10 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 - El único estado es activo/inactivo. No hay etiqueta disponible/a pedido/agotado.
 - Una categoría con productos no se puede borrar.
 - precio opcional (entero mayor a 0, o vacío)
-- - Subcategoría: pertenece a una categoría (tabla objeto_subcategorias), con nombre y orden. El modelo es genérico, pero hoy solo se usa en Lámparas. El producto tiene una subcategoría opcional (subcategoria_id) que debe pertenecer a su misma categoría.
+- Subcategoría: pertenece a una categoría (tabla objeto_subcategorias), con nombre y orden. El modelo es genérico, pero hoy solo se usa en Lámparas. El producto tiene una subcategoría opcional (subcategoria_id) que debe pertenecer a su misma categoría.
 - Borrar una subcategoría no oculta productos: quedan sin subcategoría y siguen visibles en "Todas".
+- Datos internos del producto (costo y proveedor, ambos opcionales) viven en la tabla objeto_datos_internos, solo para usuarios autenticados. El beneficio y el margen no se guardan: se calculan como precio menos costo, y margen sobre el precio de venta.
+- Estos datos nunca se muestran en el sitio público ni se consultan desde código público (src/lib/objetos.ts, páginas de /objects y componentes del sitio). Solo los usa el admin.
 
 ### Regla de visibilidad pública
 
@@ -46,7 +49,7 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 - Una categoría se ve si está activa y tiene al menos un producto visible.
 - Si no hay ninguna categoría visible, `/objects` muestra "Próximamente".
 - La capa de datos aplica los filtros `activo = true` de forma explícita en el código. No depende solo de RLS, porque una persona logueada en el admin que navega el sitio público corre las consultas como usuario autenticado.
-- - Una subcategoría aparece en los filtros solo si tiene al menos un producto visible.
+- Una subcategoría aparece en los filtros solo si tiene al menos un producto visible.
 - Los filtros de subcategoría se muestran solo si la categoría tiene dos o más subcategorías visibles. Los productos sin subcategoría aparecen únicamente en "Todas".
 
 ### Rutas

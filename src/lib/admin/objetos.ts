@@ -14,16 +14,23 @@ export type AdminObjetoCategoria = ObjetoCategoria & {
   totalSubcategorias: number;
 };
 
-export type AdminObjeto = Objeto & {
-  coverImage: { src: string; alt: string; focalX: number; focalY: number } | null;
-  categoriaNombre: string;
-  subcategoriaNombre: string | null;
+type DatosInternos = {
+  costo: number | null;
+  proveedor: string | null;
 };
 
-export type AdminObjetoConImagenes = Objeto & {
-  imagenes: ObjetoImagen[];
-  subcategoriaNombre: string | null;
-};
+export type AdminObjeto = Objeto &
+  DatosInternos & {
+    coverImage: { src: string; alt: string; focalX: number; focalY: number } | null;
+    categoriaNombre: string;
+    subcategoriaNombre: string | null;
+  };
+
+export type AdminObjetoConImagenes = Objeto &
+  DatosInternos & {
+    imagenes: ObjetoImagen[];
+    subcategoriaNombre: string | null;
+  };
 
 export type SubcategoriasPorCategoria = Record<string, ObjetoSubcategoria[]>;
 
@@ -125,6 +132,25 @@ export async function getAdminSubcategoriasPorCategoria(): Promise<Subcategorias
   return agrupadas;
 }
 
+async function getDatosInternos(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: string[]
+): Promise<Map<string, DatosInternos>> {
+  if (ids.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from("objeto_datos_internos")
+    .select("objeto_id, costo, proveedor")
+    .in("objeto_id", ids);
+
+  return new Map(
+    (data ?? []).map((fila) => [
+      fila.objeto_id,
+      { costo: normalizarPrecio(fila.costo), proveedor: fila.proveedor ?? null },
+    ])
+  );
+}
+
 async function getNombresSubcategorias(
   supabase: Awaited<ReturnType<typeof createClient>>,
   ids: string[]
@@ -197,11 +223,19 @@ export async function getAdminObjetos(
     ),
   ]);
 
+  const datosInternos = await getDatosInternos(
+    supabase,
+    objetos.map((objeto) => objeto.id)
+  );
+
   return objetos.map((objeto) => {
     const portada = elegirPortada(imagenesPorObjeto.get(objeto.id) ?? []);
+    const internos = datosInternos.get(objeto.id);
     return {
       ...objeto,
       precio: normalizarPrecio(objeto.precio),
+      costo: internos?.costo ?? null,
+      proveedor: internos?.proveedor ?? null,
       coverImage: portada
         ? {
             src: portada.url,
@@ -247,10 +281,15 @@ export async function getAdminObjeto(
     supabase,
     objeto.subcategoria_id ? [objeto.subcategoria_id] : []
   );
+  const internos = (await getDatosInternos(supabase, [objeto.id])).get(
+    objeto.id
+  );
 
   return {
     ...objeto,
     precio: normalizarPrecio(objeto.precio),
+    costo: internos?.costo ?? null,
+    proveedor: internos?.proveedor ?? null,
     imagenes: imagenes ?? [],
     subcategoriaNombre: objeto.subcategoria_id
       ? subcategoriaPorId.get(objeto.subcategoria_id) ?? null
