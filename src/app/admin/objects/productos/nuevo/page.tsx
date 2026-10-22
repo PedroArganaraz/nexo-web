@@ -1,4 +1,7 @@
-import { getAdminObjetoCategorias } from "@/lib/admin/objetos";
+import {
+  getAdminObjetoCategorias,
+  getAdminSubcategoriasPorCategoria,
+} from "@/lib/admin/objetos";
 import ObjetoForm from "../ObjetoForm";
 
 export default async function NuevoObjetoPage({
@@ -6,9 +9,10 @@ export default async function NuevoObjetoPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const [{ categoria }, categorias] = await Promise.all([
+  const [{ categoria }, categorias, subcategorias] = await Promise.all([
     searchParams,
     getAdminObjetoCategorias(),
+    getAdminSubcategoriasPorCategoria(),
   ]);
 
   const initialCategoriaId =
@@ -19,6 +23,7 @@ export default async function NuevoObjetoPage({
   return (
     <ObjetoForm
       categorias={categorias}
+      subcategorias={subcategorias}
       initialCategoriaId={initialCategoriaId}
     />
   );

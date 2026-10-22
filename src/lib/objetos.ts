@@ -5,6 +5,7 @@ import type {
   NexoObject,
   ObjectCategory,
   ObjectCategoryDetail,
+  ObjectSubcategory,
 } from "@/types";
 import type { Objeto, ObjetoCategoria, ObjetoImagen } from "@/types/database";
 
@@ -35,7 +36,8 @@ function mapObjetoCategoriaToObjectCategory(
 
 function mapObjetoToNexoObject(
   objeto: Objeto,
-  imagenes: ObjetoImagen[]
+  imagenes: ObjetoImagen[],
+  subcategoria: ObjectSubcategory | null
 ): NexoObject {
   const sorted = [...imagenes].sort((a, b) => a.orden - b.orden);
   const portada = elegirPortada(sorted);
@@ -45,6 +47,7 @@ function mapObjetoToNexoObject(
     name: objeto.nombre,
     description: objeto.descripcion,
     price: normalizarPrecio(objeto.precio),
+    subcategory: subcategoria,
     coverImage: portada
       ? {
           src: portada.url,
@@ -137,6 +140,12 @@ export const getObjetoCategoriaPorSlug = cache(async function (
     return null;
   }
 
+  const { data: subcategorias } = await supabase
+    .from("objeto_subcategorias")
+    .select("id, nombre")
+    .eq("categoria_id", categoria.id)
+    .order("orden", { ascending: true });
+
   const imagenesPorObjeto = new Map<string, ObjetoImagen[]>();
   for (const imagen of imagenes ?? []) {
     const list = imagenesPorObjeto.get(imagen.objeto_id) ?? [];
@@ -144,10 +153,29 @@ export const getObjetoCategoriaPorSlug = cache(async function (
     imagenesPorObjeto.set(imagen.objeto_id, list);
   }
 
+  const subcategoriaPorId = new Map<string, ObjectSubcategory>(
+    (subcategorias ?? []).map((subcategoria) => [
+      subcategoria.id,
+      { id: subcategoria.id, name: subcategoria.nombre },
+    ])
+  );
+  const subcategoriasConObjetos = new Set(
+    objetos.map((objeto) => objeto.subcategoria_id)
+  );
+
   return {
     ...mapObjetoCategoriaToObjectCategory(categoria),
     objects: objetos.map((objeto) =>
-      mapObjetoToNexoObject(objeto, imagenesPorObjeto.get(objeto.id) ?? [])
+      mapObjetoToNexoObject(
+        objeto,
+        imagenesPorObjeto.get(objeto.id) ?? [],
+        (objeto.subcategoria_id &&
+          subcategoriaPorId.get(objeto.subcategoria_id)) ||
+          null
+      )
+    ),
+    subcategories: Array.from(subcategoriaPorId.values()).filter(
+      (subcategoria) => subcategoriasConObjetos.has(subcategoria.id)
     ),
   };
 });

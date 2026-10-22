@@ -19,12 +19,16 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { OBJETOS_BUCKET } from "@/lib/objetos-constantes";
-import type { AdminObjetoCategoria } from "@/lib/admin/objetos";
-import type { ObjetoCategoria } from "@/types/database";
+import type {
+  AdminObjetoCategoria,
+  SubcategoriasPorCategoria,
+} from "@/lib/admin/objetos";
+import type { ObjetoCategoria, ObjetoSubcategoria } from "@/types/database";
 import DragHandleIcon from "../DragHandleIcon";
 import ToggleActivo from "../ToggleActivo";
 import { useRefreshOnMount } from "../useRefreshOnMount";
 import ObjetoCategoriaModal from "./ObjetoCategoriaModal";
+import SubcategoriasModal from "./SubcategoriasModal";
 
 type ModalState =
   | { mode: "create" }
@@ -44,6 +48,7 @@ const deleteButtonClass =
 
 function CategoriaRow({
   categoria,
+  onSubcategorias,
   onEdit,
   onDelete,
   isDeleting,
@@ -51,6 +56,7 @@ function CategoriaRow({
   isToggling,
 }: {
   categoria: AdminObjetoCategoria;
+  onSubcategorias: (categoria: AdminObjetoCategoria) => void;
   onEdit: (categoria: AdminObjetoCategoria) => void;
   onDelete: (categoria: AdminObjetoCategoria) => void;
   isDeleting: boolean;
@@ -126,6 +132,15 @@ function CategoriaRow({
           {categoria.objetosActivos} de {categoria.totalObjetos} productos
           activos
         </p>
+        <button
+          type="button"
+          onClick={() => onSubcategorias(categoria)}
+          className="mt-2 inline-flex min-h-10 md:min-h-8 items-center rounded-full border border-[#e0e0e0] px-3 text-xs text-[#1a1a1a] cursor-pointer hover:border-[#1a1a1a] transition-colors duration-200"
+        >
+          {categoria.totalSubcategorias > 0
+            ? `Subcategorías (${categoria.totalSubcategorias})`
+            : "+ Subcategoría"}
+        </button>
       </div>
 
       <p
@@ -177,10 +192,15 @@ function CategoriaRow({
 
 export default function ObjetoCategoriasTable({
   initialCategorias,
+  initialSubcategorias,
 }: {
   initialCategorias: AdminObjetoCategoria[];
+  initialSubcategorias: SubcategoriasPorCategoria;
 }) {
   const [categorias, setCategorias] = useState(initialCategorias);
+  const [subcategorias, setSubcategorias] = useState(initialSubcategorias);
+  const [subcategoriasDe, setSubcategoriasDe] =
+    useState<AdminObjetoCategoria | null>(null);
   const [modalState, setModalState] = useState<ModalState | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -312,9 +332,25 @@ export default function ObjetoCategoriasTable({
           c.id === saved.id ? { ...existing, ...saved } : c
         );
       }
-      return [...prev, { ...saved, totalObjetos: 0, objetosActivos: 0 }];
+      return [
+        ...prev,
+        { ...saved, totalObjetos: 0, objetosActivos: 0, totalSubcategorias: 0 },
+      ];
     });
     setModalState(null);
+  }
+
+  function handleSubcategoriasClose(lista: ObjetoSubcategoria[]) {
+    if (subcategoriasDe) {
+      const categoriaId = subcategoriasDe.id;
+      setSubcategorias((prev) => ({ ...prev, [categoriaId]: lista }));
+      setCategorias((prev) =>
+        prev.map((c) =>
+          c.id === categoriaId ? { ...c, totalSubcategorias: lista.length } : c
+        )
+      );
+    }
+    setSubcategoriasDe(null);
   }
 
   return (
@@ -362,6 +398,7 @@ export default function ObjetoCategoriasTable({
                 <CategoriaRow
                   key={categoria.id}
                   categoria={categoria}
+                  onSubcategorias={setSubcategoriasDe}
                   onEdit={(c) => setModalState({ mode: "edit", categoria: c })}
                   onDelete={handleDelete}
                   isDeleting={deletingId === categoria.id}
@@ -380,6 +417,14 @@ export default function ObjetoCategoriasTable({
           nextOrden={nextOrden}
           onSaved={handleSaved}
           onCancel={() => setModalState(null)}
+        />
+      )}
+
+      {subcategoriasDe && (
+        <SubcategoriasModal
+          categoria={subcategoriasDe}
+          initialSubcategorias={subcategorias[subcategoriasDe.id] ?? []}
+          onClose={handleSubcategoriasClose}
         />
       )}
     </div>

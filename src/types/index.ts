@@ -39,15 +39,22 @@ export interface ObjectCategory {
   image: ProjectImage | null;
 }
 
+export interface ObjectSubcategory {
+  id: string;
+  name: string;
+}
+
 export interface NexoObject {
   id: string;
   name: string;
   description: string;
   price: number | null;
+  subcategory: ObjectSubcategory | null;
   coverImage: ProjectImage;
   galleryImages: ProjectImage[];
 }
 
 export interface ObjectCategoryDetail extends ObjectCategory {
   objects: NexoObject[];
+  subcategories: ObjectSubcategory[];
 }

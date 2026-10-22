@@ -82,9 +82,18 @@ export type ObjetoCategoria = {
   created_at: string;
 };
 
+export type ObjetoSubcategoria = {
+  id: string;
+  categoria_id: string;
+  nombre: string;
+  orden: number;
+  created_at: string;
+};
+
 export type Objeto = {
   id: string;
   categoria_id: string;
+  subcategoria_id: string | null;
   nombre: string;
   descripcion: string;
   precio: number | null;
@@ -193,6 +202,28 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "objetos_categoria_id_fkey";
+            columns: ["categoria_id"];
+            isOneToOne: false;
+            referencedRelation: "objeto_categorias";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "objetos_subcategoria_id_fkey";
+            columns: ["subcategoria_id"];
+            isOneToOne: false;
+            referencedRelation: "objeto_subcategorias";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      objeto_subcategorias: {
+        Row: ObjetoSubcategoria;
+        Insert: Partial<Omit<ObjetoSubcategoria, "id" | "created_at">> &
+          Pick<ObjetoSubcategoria, "categoria_id" | "nombre">;
+        Update: Partial<Omit<ObjetoSubcategoria, "id" | "created_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "objeto_subcategorias_categoria_id_fkey";
             columns: ["categoria_id"];
             isOneToOne: false;
             referencedRelation: "objeto_categorias";

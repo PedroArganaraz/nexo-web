@@ -1,21 +1,31 @@
 import { createClient } from "@/lib/supabase/server";
 import { elegirPortada } from "@/lib/objetos";
 import { normalizarPrecio } from "@/lib/precio";
-import type { Objeto, ObjetoCategoria, ObjetoImagen } from "@/types/database";
+import type {
+  Objeto,
+  ObjetoCategoria,
+  ObjetoImagen,
+  ObjetoSubcategoria,
+} from "@/types/database";
 
 export type AdminObjetoCategoria = ObjetoCategoria & {
   totalObjetos: number;
   objetosActivos: number;
+  totalSubcategorias: number;
 };
 
 export type AdminObjeto = Objeto & {
   coverImage: { src: string; alt: string; focalX: number; focalY: number } | null;
   categoriaNombre: string;
+  subcategoriaNombre: string | null;
 };
 
 export type AdminObjetoConImagenes = Objeto & {
   imagenes: ObjetoImagen[];
+  subcategoriaNombre: string | null;
 };
+
+export type SubcategoriasPorCategoria = Record<string, ObjetoSubcategoria[]>;
 
 export async function getAdminObjetoCategorias(): Promise<
   AdminObjetoCategoria[]
@@ -39,6 +49,22 @@ export async function getAdminObjetoCategorias(): Promise<
     return [];
   }
 
+  const { data: subcategorias, error: subcategoriasError } = await supabase
+    .from("objeto_subcategorias")
+    .select("categoria_id");
+
+  if (subcategoriasError || !subcategorias) {
+    return [];
+  }
+
+  const subcategoriasPorCategoria = new Map<string, number>();
+  for (const subcategoria of subcategorias) {
+    subcategoriasPorCategoria.set(
+      subcategoria.categoria_id,
+      (subcategoriasPorCategoria.get(subcategoria.categoria_id) ?? 0) + 1
+    );
+  }
+
   const totalPorCategoria = new Map<string, number>();
   const activosPorCategoria = new Map<string, number>();
   for (const objeto of objetos) {
@@ -58,7 +84,59 @@ export async function getAdminObjetoCategorias(): Promise<
     ...categoria,
     totalObjetos: totalPorCategoria.get(categoria.id) ?? 0,
     objetosActivos: activosPorCategoria.get(categoria.id) ?? 0,
+    totalSubcategorias: subcategoriasPorCategoria.get(categoria.id) ?? 0,
   }));
+}
+
+export async function getAdminSubcategorias(
+  categoriaId: string
+): Promise<ObjetoSubcategoria[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("objeto_subcategorias")
+    .select("*")
+    .eq("categoria_id", categoriaId)
+    .order("orden", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}
+
+export async function getAdminSubcategoriasPorCategoria(): Promise<SubcategoriasPorCategoria> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("objeto_subcategorias")
+    .select("*")
+    .order("orden", { ascending: true });
+
+  if (error || !data) {
+    return {};
+  }
+
+  const agrupadas: SubcategoriasPorCategoria = {};
+  for (const subcategoria of data) {
+    (agrupadas[subcategoria.categoria_id] ??= []).push(subcategoria);
+  }
+  return agrupadas;
+}
+
+async function getNombresSubcategorias(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: string[]
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from("objeto_subcategorias")
+    .select("id, nombre")
+    .in("id", ids);
+
+  return new Map((data ?? []).map((sub) => [sub.id, sub.nombre]));
 }
 
 export async function getAdminObjetos(
@@ -111,6 +189,14 @@ export async function getAdminObjetos(
     (categorias ?? []).map((categoria) => [categoria.id, categoria.nombre])
   );
 
+  const subcategoriaPorId = await getNombresSubcategorias(supabase, [
+    ...new Set(
+      objetos
+        .map((objeto) => objeto.subcategoria_id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ]);
+
   return objetos.map((objeto) => {
     const portada = elegirPortada(imagenesPorObjeto.get(objeto.id) ?? []);
     return {
@@ -125,6 +211,9 @@ export async function getAdminObjetos(
           }
         : null,
       categoriaNombre: categoriaPorId.get(objeto.categoria_id) ?? "Sin categoría",
+      subcategoriaNombre: objeto.subcategoria_id
+        ? subcategoriaPorId.get(objeto.subcategoria_id) ?? null
+        : null,
     };
   });
 }
@@ -154,9 +243,17 @@ export async function getAdminObjeto(
     return null;
   }
 
+  const subcategoriaPorId = await getNombresSubcategorias(
+    supabase,
+    objeto.subcategoria_id ? [objeto.subcategoria_id] : []
+  );
+
   return {
     ...objeto,
     precio: normalizarPrecio(objeto.precio),
     imagenes: imagenes ?? [],
+    subcategoriaNombre: objeto.subcategoria_id
+      ? subcategoriaPorId.get(objeto.subcategoria_id) ?? null
+      : null,
   };
 }

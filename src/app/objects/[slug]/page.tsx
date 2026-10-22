@@ -64,7 +64,11 @@ export default async function ObjetoCategoriaPage({
             {categoria.name}
           </h1>
 
-          <ObjetosGrid objetos={categoria.objects} categoria={categoria.name} />
+          <ObjetosGrid
+            objetos={categoria.objects}
+            categoria={categoria.name}
+            subcategorias={categoria.subcategories}
+          />
         </section>
       </main>
       <Footer />

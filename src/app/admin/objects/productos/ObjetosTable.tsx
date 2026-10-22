@@ -416,8 +416,12 @@ export default function ObjetosTable({
 
   const rowProps = (objeto: AdminObjeto) => ({
     objeto,
-    categoriaNombre:
+    categoriaNombre: [
       categoriaPorId.get(objeto.categoria_id)?.nombre ?? objeto.categoriaNombre,
+      objeto.subcategoriaNombre,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     onDelete: handleDelete,
     isDeleting: deletingId === objeto.id,
     onToggleActivo: handleToggleActivo,

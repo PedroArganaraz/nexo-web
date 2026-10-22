@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import type { NexoObject } from '@/types'
+import type { NexoObject, ObjectSubcategory } from '@/types'
 import ObjetoModal from '@/components/ui/ObjetoModal'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
@@ -50,7 +50,7 @@ function ObjetoCard({
 
       <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
         <span className="block text-xs tracking-widest uppercase text-white/70 mb-1">
-          {categoria}
+          {objeto.subcategory?.name ?? categoria}
         </span>
         <span className="block font-helvetica font-semibold text-white text-base md:text-lg leading-snug uppercase tracking-wide break-words">
           {objeto.name}
@@ -67,31 +67,106 @@ function ObjetoCard({
   )
 }
 
+const GRID_CLASS = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+
+function FiltroButton({
+  activo,
+  onClick,
+  children,
+}: {
+  activo: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activo}
+      className={`inline-flex min-h-10 items-center whitespace-nowrap rounded-full border px-5 text-sm transition-colors duration-200 cursor-pointer ${
+        activo
+          ? 'bg-[#1a1a1a] border-[#1a1a1a] text-white'
+          : 'bg-white border-[#e0e0e0] text-[#1a1a1a] hover:border-[#1a1a1a]'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function ObjetosGrid({
   objetos,
   categoria,
+  subcategorias,
 }: {
   objetos: NexoObject[]
   categoria: string
+  subcategorias: ObjectSubcategory[]
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const [seleccionado, setSeleccionado] = useState<NexoObject | null>(null)
+  const [filtro, setFiltro] = useState<string | null>(null)
+
+  const conFiltros = subcategorias.length >= 2
+  const visibles =
+    conFiltros && filtro
+      ? objetos.filter((objeto) => objeto.subcategory?.id === filtro)
+      : objetos
+
+  const cards = visibles.map((objeto, index) => (
+    <ObjetoCard
+      key={objeto.id}
+      objeto={objeto}
+      categoria={categoria}
+      index={index}
+      inView={inView}
+      onClick={() => setSeleccionado(objeto)}
+    />
+  ))
 
   return (
     <>
-      <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {objetos.map((objeto, index) => (
-          <ObjetoCard
-            key={objeto.id}
-            objeto={objeto}
-            categoria={categoria}
-            index={index}
-            inView={inView}
-            onClick={() => setSeleccionado(objeto)}
-          />
-        ))}
-      </div>
+      {conFiltros && (
+        <div className="-mx-6 px-6 mb-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0 md:overflow-visible">
+          <div
+            role="group"
+            aria-label="Filtrar por subcategoría"
+            className="flex w-max gap-2 md:w-auto md:flex-wrap"
+          >
+            <FiltroButton activo={filtro === null} onClick={() => setFiltro(null)}>
+              Todas
+            </FiltroButton>
+            {subcategorias.map((subcategoria) => (
+              <FiltroButton
+                key={subcategoria.id}
+                activo={filtro === subcategoria.id}
+                onClick={() => setFiltro(subcategoria.id)}
+              >
+                {subcategoria.name}
+              </FiltroButton>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {conFiltros ? (
+        <div ref={ref}>
+          <motion.div
+            key={filtro ?? 'todas'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className={GRID_CLASS}
+          >
+            {cards}
+          </motion.div>
+        </div>
+      ) : (
+        <div ref={ref} className={GRID_CLASS}>
+          {cards}
+        </div>
+      )}
 
       <AnimatePresence>
         {seleccionado && (

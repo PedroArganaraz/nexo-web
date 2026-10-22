@@ -174,7 +174,9 @@ export default function ObjetoModal({
 
           <div className="flex-1 flex flex-col p-6 md:p-8 md:pt-16">
             <span className="text-xs tracking-widest uppercase text-[#666666] mb-2">
-              {categoria}
+              {objeto.subcategory
+                ? `${categoria} · ${objeto.subcategory.name}`
+                : categoria}
             </span>
             <h3 className="font-helvetica font-bold text-2xl md:text-3xl text-[#1a1a1a] mb-5 break-words">
               {objeto.name}

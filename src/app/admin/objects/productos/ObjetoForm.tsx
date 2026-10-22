@@ -30,7 +30,10 @@ import { createClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagenes";
 import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
 import { PRECIO_MAXIMO, formatearNumero, formatearPrecio } from "@/lib/precio";
-import type { AdminObjetoConImagenes } from "@/lib/admin/objetos";
+import type {
+  AdminObjetoConImagenes,
+  SubcategoriasPorCategoria,
+} from "@/lib/admin/objetos";
 import type { ObjetoCategoria, ObjetoImagen } from "@/types/database";
 import FocalPointModal from "@/app/admin/FocalPointModal";
 import DragHandleIcon from "../DragHandleIcon";
@@ -180,10 +183,12 @@ async function siguienteOrden(
 export default function ObjetoForm({
   objeto,
   categorias,
+  subcategorias,
   initialCategoriaId,
 }: {
   objeto?: AdminObjetoConImagenes;
   categorias: ObjetoCategoria[];
+  subcategorias: SubcategoriasPorCategoria;
   initialCategoriaId?: string;
 }) {
   const router = useRouter();
@@ -194,6 +199,14 @@ export default function ObjetoForm({
 
   const [categoriaId, setCategoriaId] = useState(
     objeto?.categoria_id ?? initialCategoriaId ?? ""
+  );
+  const [subcategoriaId, setSubcategoriaId] = useState(() =>
+    objeto?.subcategoria_id &&
+    (subcategorias[objeto.categoria_id] ?? []).some(
+      (sub) => sub.id === objeto.subcategoria_id
+    )
+      ? objeto.subcategoria_id
+      : ""
   );
   const [nombre, setNombre] = useState(objeto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(objeto?.descripcion ?? "");
@@ -228,6 +241,9 @@ export default function ObjetoForm({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  const subcategoriasDeCategoria = categoriaId
+    ? subcategorias[categoriaId] ?? []
+    : [];
   const listHref = `/admin/objects/productos${
     categoriaId ? `?categoria=${categoriaId}` : ""
   }`;
@@ -462,6 +478,7 @@ export default function ObjetoForm({
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
       precio: precioDesdeDigitos(precioDigitos),
+      subcategoria_id: subcategoriaId || null,
       activo,
       orden,
     });
@@ -516,6 +533,7 @@ export default function ObjetoForm({
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
         precio: precioDesdeDigitos(precioDigitos),
+        subcategoria_id: subcategoriaId || null,
         activo,
         orden,
       })
@@ -627,6 +645,16 @@ export default function ObjetoForm({
       return;
     }
 
+    if (
+      subcategoriaId &&
+      !subcategoriasDeCategoria.some((sub) => sub.id === subcategoriaId)
+    ) {
+      toast.error(
+        "La subcategoría elegida no pertenece a la categoría. Elegí otra o dejala sin subcategoría."
+      );
+      return;
+    }
+
     if (!precioValido(precioDesdeDigitos(precioDigitos))) {
       toast.error(
         `El precio tiene que ser un número entero mayor a $0 y menor a ${formatearPrecio(PRECIO_MAXIMO)}. Dejalo vacío si no querés mostrar precio.`
@@ -680,7 +708,10 @@ export default function ObjetoForm({
             ) : (
               <select
                 value={categoriaId}
-                onChange={(e) => setCategoriaId(e.target.value)}
+                onChange={(e) => {
+                  setCategoriaId(e.target.value);
+                  setSubcategoriaId("");
+                }}
                 className={inputClass}
               >
                 <option value="">Seleccionar...</option>
@@ -692,6 +723,26 @@ export default function ObjetoForm({
               </select>
             )}
           </div>
+          {subcategoriasDeCategoria.length > 0 && (
+            <div>
+              <label htmlFor="objeto-subcategoria" className={labelClass}>
+                Subcategoría (opcional)
+              </label>
+              <select
+                id="objeto-subcategoria"
+                value={subcategoriaId}
+                onChange={(e) => setSubcategoriaId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Sin subcategoría</option>
+                {subcategoriasDeCategoria.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className={labelClass}>Nombre *</label>
             <input
