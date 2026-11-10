@@ -94,6 +94,7 @@ export type Objeto = {
   id: string;
   categoria_id: string;
   subcategoria_id: string | null;
+  slug: string;
   nombre: string;
   descripcion: string;
   precio: number | null;
@@ -203,8 +204,8 @@ export type Database = {
       objetos: {
         Row: Objeto;
         Insert: Partial<Omit<Objeto, "created_at" | "updated_at">> &
-          Pick<Objeto, "categoria_id" | "nombre" | "descripcion">;
-        Update: Partial<Omit<Objeto, "id" | "created_at" | "updated_at">>;
+          Pick<Objeto, "categoria_id" | "slug" | "nombre" | "descripcion">;
+        Update: Partial<Omit<Objeto, "id" | "slug" | "created_at" | "updated_at">>;
         Relationships: [
           {
             foreignKeyName: "objetos_categoria_id_fkey";

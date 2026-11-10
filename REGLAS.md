@@ -34,7 +34,8 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 ### Modelo
 
 - Categoría: nombre, slug (se genera una sola vez al crear y no cambia al renombrar), imagen con punto focal, orden y activo.
-- Producto: nombre, descripción, categoría (obligatoria), orden, activo e imágenes (con portada y punto focal).
+- Producto: nombre, slug, descripción, categoría (obligatoria), orden, activo e imágenes (con portada y punto focal).
+- El slug del producto se genera una sola vez al crearlo, es único en toda la tabla `objetos` y nunca cambia: ni al renombrar el producto ni al moverlo de categoría.
 - El único estado es activo/inactivo. No hay etiqueta disponible/a pedido/agotado.
 - Una categoría con productos no se puede borrar.
 - precio opcional (entero mayor a 0, o vacío)
@@ -55,6 +56,8 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 ### Rutas
 
 - Público: `/objects` (cards de categorías), `/objects/[slug]` (productos de la categoría; el producto abre en un modal con imágenes, descripción y botón de WhatsApp).
+- Público: `/objects/[slug]/[producto]` es el link propio de cada producto. Abre la página de la categoría con ese producto ya abierto en el modal. Dentro del sitio, abrir un producto cambia la URL sin recargar y el botón atrás lo cierra. Ambas rutas comparten la misma página (`src/app/objects/[slug]/[[...producto]]/page.tsx`).
+- Redirección canónica: si el slug de categoría de la URL no coincide con la categoría actual del producto (se movió de categoría o cambió el slug de la categoría), se responde con un redirect permanente a `/objects/[categoría actual]/[producto]`. Si el producto no existe, está inactivo o su categoría está inactiva, la respuesta es 404.
 - Admin: `/admin/objects/categorias` y `/admin/objects/productos`, con una sola entrada "Nexo Objects" en el menú del admin y pestañas dentro.
 
 ### Orden de construcción

@@ -15,7 +15,14 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : `http://localhost:${process.env.PORT || 3000}`);
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "NEXO | Arquitectura & Diseño de Interiores",
   description:
     "Estudio de arquitectura y diseño de interiores en Córdoba, Argentina. Transformamos espacios en experiencias.",

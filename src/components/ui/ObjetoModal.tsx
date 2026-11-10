@@ -1,29 +1,50 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import type { NexoObject } from '@/types'
 import { whatsappHref } from '@/lib/contacto'
 import { formatearPrecio } from '@/lib/precio'
+import { copiarTexto, puedeCompartirNativo, urlAbsoluta } from '@/lib/compartir'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
+
+type EstadoCopia = 'idle' | 'copiado' | 'error'
+
+function suscribirseSinCambios() {
+  return () => {}
+}
 
 export default function ObjetoModal({
   objeto,
   categoria,
+  ruta,
   onClose,
 }: {
   objeto: NexoObject
   categoria: string
+  ruta: string
   onClose: () => void
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [estadoCopia, setEstadoCopia] = useState<EstadoCopia>('idle')
+  const timerCopiaRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const compartirNativo = useSyncExternalStore(
+    suscribirseSinCambios,
+    puedeCompartirNativo,
+    () => false
+  )
   const imagenes =
     objeto.galleryImages.length > 0 ? objeto.galleryImages : [objeto.coverImage]
   const total = imagenes.length
   const tieneGaleria = total > 1
+
+  useEffect(() => {
+    return () => {
+      if (timerCopiaRef.current) clearTimeout(timerCopiaRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -48,10 +69,40 @@ export default function ObjetoModal({
   const mensaje = `Hola! Quisiera consultar por ${objeto.name} (${categoria}).`
 
   function handleConsultar(e: React.MouseEvent<HTMLAnchorElement>) {
-    e.currentTarget.href = whatsappHref(`${mensaje} ${window.location.href}`)
+    e.currentTarget.href = whatsappHref(`${mensaje} ${urlAbsoluta(ruta)}`)
   }
 
-  return createPortal(
+  function mostrarEstadoCopia(estado: EstadoCopia) {
+    setEstadoCopia(estado)
+    if (timerCopiaRef.current) clearTimeout(timerCopiaRef.current)
+    timerCopiaRef.current = setTimeout(() => setEstadoCopia('idle'), 2000)
+  }
+
+  async function handleCompartir() {
+    const url = urlAbsoluta(ruta)
+
+    if (compartirNativo) {
+      try {
+        await navigator.share({ title: `${objeto.name} | Nexo Objects`, url })
+        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+      }
+    }
+
+    mostrarEstadoCopia((await copiarTexto(url)) ? 'copiado' : 'error')
+  }
+
+  const textoCompartir =
+    estadoCopia === 'copiado'
+      ? 'Link copiado'
+      : estadoCopia === 'error'
+        ? 'No se pudo copiar'
+        : compartirNativo
+          ? 'Compartir'
+          : 'Copiar link'
+
+  return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
       initial={{ opacity: 0 }}
@@ -193,20 +244,39 @@ export default function ObjetoModal({
                   Precio: {formatearPrecio(objeto.price)}
                 </p>
               )}
-              <a
-                href={whatsappHref(mensaje)}
-                onClick={handleConsultar}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-10 items-center bg-[#1a1a1a] text-white text-xs font-semibold uppercase tracking-widest px-6 py-3 rounded-full hover:bg-accent transition-colors duration-200"
-              >
-                Consultar por WhatsApp
-              </a>
+              <div className="flex w-fit max-w-full flex-col items-stretch gap-3">
+                <a
+                  href={whatsappHref(mensaje)}
+                  onClick={handleConsultar}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-10 items-center justify-center text-center border border-[#1a1a1a] bg-[#1a1a1a] text-white text-xs font-semibold uppercase tracking-widest px-6 md:px-3 lg:px-6 py-3 rounded-full hover:bg-accent hover:border-accent transition-colors duration-200"
+                >
+                  Consultar por WhatsApp
+                </a>
+                <button
+                  type="button"
+                  onClick={handleCompartir}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 border border-[#1a1a1a] text-[#1a1a1a] text-xs font-semibold uppercase tracking-widest px-6 md:px-3 lg:px-6 py-3 rounded-full hover:bg-[#1a1a1a] hover:text-white transition-colors duration-200 cursor-pointer"
+                >
+                  <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4 shrink-0" aria-hidden="true">
+                    <path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  {textoCompartir}
+                </button>
+              </div>
+              <span className="sr-only" aria-live="polite">
+                {estadoCopia === 'copiado'
+                  ? 'Link copiado'
+                  : estadoCopia === 'error'
+                    ? 'No se pudo copiar el link'
+                    : ''}
+              </span>
             </div>
           </div>
         </div>
       </motion.div>
-    </motion.div>,
-    document.body
+    </motion.div>
   )
 }

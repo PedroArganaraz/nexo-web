@@ -23,12 +23,14 @@ export type AdminObjeto = Objeto &
   DatosInternos & {
     coverImage: { src: string; alt: string; focalX: number; focalY: number } | null;
     categoriaNombre: string;
+    categoriaSlug: string | null;
     subcategoriaNombre: string | null;
   };
 
 export type AdminObjetoConImagenes = Objeto &
   DatosInternos & {
     imagenes: ObjetoImagen[];
+    categoriaSlug: string | null;
     subcategoriaNombre: string | null;
   };
 
@@ -195,7 +197,7 @@ export async function getAdminObjetos(
 
   const { data: categorias } = await supabase
     .from("objeto_categorias")
-    .select("id, nombre")
+    .select("id, nombre, slug")
     .in("id", [...new Set(objetos.map((objeto) => objeto.categoria_id))]);
 
   const imagenesPorObjeto = new Map<
@@ -212,7 +214,7 @@ export async function getAdminObjetos(
   }
 
   const categoriaPorId = new Map(
-    (categorias ?? []).map((categoria) => [categoria.id, categoria.nombre])
+    (categorias ?? []).map((categoria) => [categoria.id, categoria])
   );
 
   const subcategoriaPorId = await getNombresSubcategorias(supabase, [
@@ -244,7 +246,9 @@ export async function getAdminObjetos(
             focalY: portada.focal_y,
           }
         : null,
-      categoriaNombre: categoriaPorId.get(objeto.categoria_id) ?? "Sin categoría",
+      categoriaNombre:
+        categoriaPorId.get(objeto.categoria_id)?.nombre ?? "Sin categoría",
+      categoriaSlug: categoriaPorId.get(objeto.categoria_id)?.slug ?? null,
       subcategoriaNombre: objeto.subcategoria_id
         ? subcategoriaPorId.get(objeto.subcategoria_id) ?? null
         : null,
@@ -284,6 +288,11 @@ export async function getAdminObjeto(
   const internos = (await getDatosInternos(supabase, [objeto.id])).get(
     objeto.id
   );
+  const { data: categoria } = await supabase
+    .from("objeto_categorias")
+    .select("slug")
+    .eq("id", objeto.categoria_id)
+    .maybeSingle();
 
   return {
     ...objeto,
@@ -291,6 +300,7 @@ export async function getAdminObjeto(
     costo: internos?.costo ?? null,
     proveedor: internos?.proveedor ?? null,
     imagenes: imagenes ?? [],
+    categoriaSlug: categoria?.slug ?? null,
     subcategoriaNombre: objeto.subcategoria_id
       ? subcategoriaPorId.get(objeto.subcategoria_id) ?? null
       : null,

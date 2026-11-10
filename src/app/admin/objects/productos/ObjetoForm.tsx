@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type DragEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +29,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagenes";
 import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
+import { rutaObjeto } from "@/lib/objetos-links";
+import { slugify, slugUnico } from "@/lib/slug";
 import {
   PRECIO_MAXIMO,
   calcularBeneficio,
@@ -41,6 +49,7 @@ import FocalPointModal from "@/app/admin/FocalPointModal";
 import DragHandleIcon from "../DragHandleIcon";
 import ToggleActivo from "../ToggleActivo";
 import MontoInput from "./MontoInput";
+import CopiarLinkButton from "./CopiarLinkButton";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGENES = 8;
@@ -166,6 +175,27 @@ function ImageCard({
         </button>
       </div>
     </div>
+  );
+}
+
+function suscribirseSinCambios() {
+  return () => {};
+}
+
+async function generarSlugObjeto(
+  supabase: Supabase,
+  nombre: string
+): Promise<string | null> {
+  const base = slugify(nombre) || "producto";
+  const { data, error } = await supabase
+    .from("objetos")
+    .select("slug")
+    .like("slug", `${base}%`);
+
+  if (error) return null;
+  return slugUnico(
+    base,
+    (data ?? []).map((fila) => fila.slug)
   );
 }
 
@@ -481,11 +511,18 @@ export default function ObjetoForm({
       return;
     }
 
+    const slug = await generarSlugObjeto(supabase, nombre.trim());
+    if (!slug) {
+      toast.error("No se pudo crear el producto. Intentá de nuevo.");
+      return;
+    }
+
     const subidas = await subirImagenesNuevas(supabase, id);
     if (!subidas) return;
 
     const { error: insertError } = await supabase.from("objetos").insert({
       id,
+      slug,
       categoria_id: categoriaId,
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
@@ -498,7 +535,11 @@ export default function ObjetoForm({
     if (insertError) {
       console.error(insertError);
       await descartarSubidas(supabase, subidas);
-      toast.error("No se pudo crear el producto. Intentá de nuevo.");
+      toast.error(
+        insertError.code === "23505"
+          ? "Ya existe otro producto con el mismo link. Tocá «Guardar producto» de nuevo para generar uno distinto."
+          : "No se pudo crear el producto. Intentá de nuevo."
+      );
       return;
     }
 
@@ -756,6 +797,22 @@ export default function ObjetoForm({
     }
   }
 
+  const origen = useSyncExternalStore(
+    suscribirseSinCambios,
+    () => window.location.origin,
+    () => ""
+  );
+  const categoriaGuardada = objeto
+    ? categorias.find((cat) => cat.id === objeto.categoria_id)
+    : undefined;
+  const linkRuta =
+    objeto && objeto.categoriaSlug
+      ? rutaObjeto(objeto.categoriaSlug, objeto.slug)
+      : null;
+  const linkCompleto = linkRuta ? `${origen}${linkRuta}` : "";
+  const linkDisponible = Boolean(
+    linkRuta && objeto?.activo && categoriaGuardada?.activo
+  );
   const sinImagenesActivo = activo && images.length === 0;
   const precio = montoDesdeDigitos(precioDigitos);
   const costo = montoDesdeDigitos(costoDigitos);
@@ -772,6 +829,34 @@ export default function ObjetoForm({
         <h2 className="font-helvetica font-bold text-lg text-[#1a1a1a] mb-4">
           {isEditMode ? "Editar producto" : "Nuevo producto"}
         </h2>
+
+        {objeto && (
+          <div className="mb-6">
+            <label htmlFor="objeto-link" className={labelClass}>
+              Link del producto
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="objeto-link"
+                type="text"
+                readOnly
+                value={linkCompleto}
+                onFocus={(e) => e.currentTarget.select()}
+                className={`${inputClass} min-w-0 sm:flex-1 text-text-secondary`}
+              />
+              <CopiarLinkButton
+                ruta={linkRuta}
+                disabled={!linkDisponible}
+                className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full border border-[#1a1a1a] px-5 text-sm font-medium text-[#1a1a1a] cursor-pointer hover:bg-[#1a1a1a] hover:text-white transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#1a1a1a] sm:self-auto"
+              />
+            </div>
+            <p className="text-xs text-text-secondary mt-1.5">
+              {linkDisponible
+                ? "Este link no cambia aunque renombres el producto o lo muevas de categoría."
+                : "Inactivo: el link no está disponible."}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

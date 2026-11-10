@@ -44,6 +44,7 @@ function mapObjetoToNexoObject(
 
   return {
     id: objeto.id,
+    slug: objeto.slug,
     name: objeto.nombre,
     description: objeto.descripcion,
     price: normalizarPrecio(objeto.precio),
@@ -99,6 +100,36 @@ export async function getObjetoCategoriasVisibles(): Promise<ObjectCategory[]> {
     .filter((categoria) => categoriasConObjetos.has(categoria.id))
     .map(mapObjetoCategoriaToObjectCategory);
 }
+
+export const getObjetoPorSlug = cache(async function (
+  slug: string
+): Promise<{ slug: string; categoriaSlug: string } | null> {
+  const supabase = await createClient();
+
+  const { data: objeto, error: objetoError } = await supabase
+    .from("objetos")
+    .select("slug, categoria_id")
+    .eq("slug", slug)
+    .eq("activo", true)
+    .maybeSingle();
+
+  if (objetoError || !objeto) {
+    return null;
+  }
+
+  const { data: categoria, error: categoriaError } = await supabase
+    .from("objeto_categorias")
+    .select("slug")
+    .eq("id", objeto.categoria_id)
+    .eq("activo", true)
+    .maybeSingle();
+
+  if (categoriaError || !categoria) {
+    return null;
+  }
+
+  return { slug: objeto.slug, categoriaSlug: categoria.slug };
+});
 
 export const getObjetoCategoriaPorSlug = cache(async function (
   slug: string

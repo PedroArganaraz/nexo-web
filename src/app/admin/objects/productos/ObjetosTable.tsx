@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import { rutaObjeto } from "@/lib/objetos-links";
 import {
   calcularBeneficio,
   formatearImporte,
@@ -33,6 +34,7 @@ import {
 import type { AdminObjeto, AdminObjetoCategoria } from "@/lib/admin/objetos";
 import DragHandleIcon from "../DragHandleIcon";
 import ToggleActivo from "../ToggleActivo";
+import CopiarLinkButton from "./CopiarLinkButton";
 
 const GRID_MD =
   "md:grid-cols-[2.5rem_3.5rem_minmax(0,1fr)_8rem_7rem_11rem]";
@@ -51,11 +53,15 @@ type RowActions = {
   isDeleting: boolean;
   onToggleActivo: (objeto: AdminObjeto) => void;
   isToggling: boolean;
+  linkRuta: string | null;
+  linkDisponible: boolean;
 };
 
 function ObjetoRowContent({
   objeto,
   categoriaNombre,
+  linkRuta,
+  linkDisponible,
   handle,
   onDelete,
   isDeleting,
@@ -123,6 +129,18 @@ function ObjetoRowContent({
         >
           {categoriaNombre}
         </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <CopiarLinkButton
+            ruta={linkRuta}
+            disabled={!linkDisponible}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[#e0e0e0] px-3 text-xs text-[#1a1a1a] cursor-pointer hover:border-[#1a1a1a] transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-[#e0e0e0]"
+          />
+          {!linkDisponible && (
+            <span className="text-xs text-text-secondary">
+              Inactivo: el link no está disponible
+            </span>
+          )}
+        </div>
       </div>
 
       <p
@@ -430,19 +448,27 @@ export default function ObjetosTable({
     }
   }
 
-  const rowProps = (objeto: AdminObjeto) => ({
-    objeto,
-    categoriaNombre: [
-      categoriaPorId.get(objeto.categoria_id)?.nombre ?? objeto.categoriaNombre,
-      objeto.subcategoriaNombre,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    onDelete: handleDelete,
-    isDeleting: deletingId === objeto.id,
-    onToggleActivo: handleToggleActivo,
-    isToggling: togglingId === objeto.id,
-  });
+  const rowProps = (objeto: AdminObjeto) => {
+    const categoria = categoriaPorId.get(objeto.categoria_id);
+    const categoriaSlug = objeto.categoriaSlug ?? categoria?.slug ?? null;
+    return {
+      objeto,
+      linkRuta: categoriaSlug ? rutaObjeto(categoriaSlug, objeto.slug) : null,
+      linkDisponible: Boolean(
+        categoriaSlug && objeto.activo && categoria?.activo
+      ),
+      categoriaNombre: [
+        categoria?.nombre ?? objeto.categoriaNombre,
+        objeto.subcategoriaNombre,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      onDelete: handleDelete,
+      isDeleting: deletingId === objeto.id,
+      onToggleActivo: handleToggleActivo,
+      isToggling: togglingId === objeto.id,
+    };
+  };
 
   const opciones = [
     { value: TODAS_LAS_CATEGORIAS, label: "Todas", count: objetos.length },

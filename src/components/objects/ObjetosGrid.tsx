@@ -1,10 +1,14 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import type { NexoObject, ObjectSubcategory } from '@/types'
 import ObjetoModal from '@/components/ui/ObjetoModal'
+import { rutaCategoriaObjetos, rutaObjeto } from '@/lib/objetos-links'
+
+const ESTADO_DESDE_GRILLA = 'nexoObjetoDesdeGrilla'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -97,16 +101,49 @@ function FiltroButton({
 export default function ObjetosGrid({
   objetos,
   categoria,
+  categoriaSlug,
   subcategorias,
 }: {
   objetos: NexoObject[]
   categoria: string
+  categoriaSlug: string
   subcategorias: ObjectSubcategory[]
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
-  const [seleccionado, setSeleccionado] = useState<NexoObject | null>(null)
   const [filtro, setFiltro] = useState<string | null>(null)
+  const cerrandoRef = useRef(false)
+  const pathname = usePathname()
+
+  const prefijoProducto = `${rutaCategoriaObjetos(categoriaSlug)}/`
+  const productoSlug = pathname.startsWith(prefijoProducto)
+    ? pathname.slice(prefijoProducto.length).split('/')[0]
+    : null
+  const seleccionado = productoSlug
+    ? objetos.find((objeto) => objeto.slug === productoSlug) ?? null
+    : null
+
+  useEffect(() => {
+    cerrandoRef.current = false
+  }, [pathname])
+
+  function abrir(objeto: NexoObject) {
+    window.history.pushState(
+      { [ESTADO_DESDE_GRILLA]: true },
+      '',
+      rutaObjeto(categoriaSlug, objeto.slug)
+    )
+  }
+
+  const cerrar = useCallback(() => {
+    if (cerrandoRef.current) return
+    cerrandoRef.current = true
+    if (window.history.state?.[ESTADO_DESDE_GRILLA]) {
+      window.history.back()
+    } else {
+      window.history.replaceState(null, '', rutaCategoriaObjetos(categoriaSlug))
+    }
+  }, [categoriaSlug])
 
   const conFiltros = subcategorias.length >= 2
   const visibles =
@@ -121,7 +158,7 @@ export default function ObjetosGrid({
       categoria={categoria}
       index={index}
       inView={inView}
-      onClick={() => setSeleccionado(objeto)}
+      onClick={() => abrir(objeto)}
     />
   ))
 
@@ -168,12 +205,14 @@ export default function ObjetosGrid({
         </div>
       )}
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {seleccionado && (
           <ObjetoModal
+            key={seleccionado.id}
             objeto={seleccionado}
             categoria={categoria}
-            onClose={() => setSeleccionado(null)}
+            ruta={rutaObjeto(categoriaSlug, seleccionado.slug)}
+            onClose={cerrar}
           />
         )}
       </AnimatePresence>

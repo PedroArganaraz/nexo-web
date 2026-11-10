@@ -46,6 +46,7 @@ export interface ObjectSubcategory {
 
 export interface NexoObject {
   id: string;
+  slug: string;
   name: string;
   description: string;
   price: number | null;
