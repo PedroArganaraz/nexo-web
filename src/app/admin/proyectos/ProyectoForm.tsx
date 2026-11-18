@@ -21,6 +21,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import {
+  comprimirImagen,
+  extensionDeImagen,
+  opcionesDeSubida,
+} from "@/lib/imagenes";
 import FocalPointModal from "@/app/admin/FocalPointModal";
 import type {
   Categoria,
@@ -503,6 +508,7 @@ export default function ProyectoForm({
   const [editingImage, setEditingImage] = useState<PendingImage | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [optimizando, setOptimizando] = useState(0);
   const [comparisons, setComparisons] = useState<PendingComparison[]>(() =>
     (proyecto?.comparaciones ?? [])
       .slice()
@@ -531,7 +537,15 @@ export default function ProyectoForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function addFiles(fileList: FileList | File[]) {
+  async function optimizar(file: File): Promise<File> {
+    try {
+      return await comprimirImagen(file);
+    } catch {
+      return file;
+    }
+  }
+
+  async function addFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList);
     const valid: File[] = [];
     let hasInvalid = false;
@@ -552,14 +566,19 @@ export default function ProyectoForm({
 
     if (valid.length === 0) return;
 
-    const newItems: PendingImage[] = valid.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      previewUrl: URL.createObjectURL(file),
-      focalX: 50,
-      focalY: 50,
-    }));
-    setImages((prev) => [...prev, ...newItems]);
+    setOptimizando((n) => n + valid.length);
+    for (const file of valid) {
+      const archivo = await optimizar(file);
+      const item: PendingImage = {
+        id: crypto.randomUUID(),
+        file: archivo,
+        previewUrl: URL.createObjectURL(archivo),
+        focalX: 50,
+        focalY: 50,
+      };
+      setImages((prev) => [...prev, item]);
+      setOptimizando((n) => n - 1);
+    }
   }
 
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -646,7 +665,7 @@ export default function ProyectoForm({
     ]);
   }
 
-  function handleComparisonFileChange(
+  async function handleComparisonFileChange(
     pairId: string,
     side: "antes" | "despues",
     file: File
@@ -658,6 +677,10 @@ export default function ProyectoForm({
       return;
     }
 
+    setOptimizando((n) => n + 1);
+    const archivo = await optimizar(file);
+    setOptimizando((n) => n - 1);
+
     setComparisons((prev) =>
       prev.map((pair) => {
         if (pair.id !== pairId) return pair;
@@ -665,7 +688,7 @@ export default function ProyectoForm({
         if (previousSlot?.file) URL.revokeObjectURL(previousSlot.previewUrl);
         return {
           ...pair,
-          [side]: { previewUrl: URL.createObjectURL(file), file },
+          [side]: { previewUrl: URL.createObjectURL(archivo), file: archivo },
         };
       })
     );
@@ -770,12 +793,12 @@ export default function ProyectoForm({
 
         if (image.file) {
           try {
-            const extension = image.file.name.split(".").pop() || "jpg";
+            const extension = extensionDeImagen(image.file);
             const path = `${projectId}/${crypto.randomUUID()}.${extension}`;
 
             const { error: uploadError } = await supabase.storage
               .from("proyectos")
-              .upload(path, image.file);
+              .upload(path, image.file, opcionesDeSubida());
             if (uploadError) throw uploadError;
 
             const {
@@ -888,18 +911,18 @@ export default function ProyectoForm({
 
         if (!original) {
           try {
-            const antesExt = antes.file!.name.split(".").pop() || "jpg";
+            const antesExt = extensionDeImagen(antes.file!);
             const antesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
             const { error: antesUploadError } = await supabase.storage
               .from("proyectos")
-              .upload(antesPath, antes.file!);
+              .upload(antesPath, antes.file!, opcionesDeSubida());
             if (antesUploadError) throw antesUploadError;
 
-            const despuesExt = despues.file!.name.split(".").pop() || "jpg";
+            const despuesExt = extensionDeImagen(despues.file!);
             const despuesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
             const { error: despuesUploadError } = await supabase.storage
               .from("proyectos")
-              .upload(despuesPath, despues.file!);
+              .upload(despuesPath, despues.file!, opcionesDeSubida());
             if (despuesUploadError) throw despuesUploadError;
 
             const {
@@ -939,11 +962,11 @@ export default function ProyectoForm({
 
         if (antes.file) {
           try {
-            const antesExt = antes.file.name.split(".").pop() || "jpg";
+            const antesExt = extensionDeImagen(antes.file);
             const antesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
             const { error: antesUploadError } = await supabase.storage
               .from("proyectos")
-              .upload(antesPath, antes.file);
+              .upload(antesPath, antes.file, opcionesDeSubida());
             if (antesUploadError) throw antesUploadError;
 
             await supabase.storage
@@ -967,11 +990,11 @@ export default function ProyectoForm({
 
         if (despues.file) {
           try {
-            const despuesExt = despues.file.name.split(".").pop() || "jpg";
+            const despuesExt = extensionDeImagen(despues.file);
             const despuesPath = `${projectId}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
             const { error: despuesUploadError } = await supabase.storage
               .from("proyectos")
-              .upload(despuesPath, despues.file);
+              .upload(despuesPath, despues.file, opcionesDeSubida());
             if (despuesUploadError) throw despuesUploadError;
 
             await supabase.storage
@@ -1093,12 +1116,12 @@ export default function ProyectoForm({
           // En modo creación todas las imágenes vienen de addFiles(), que
           // siempre setea `file`.
           const file = image.file!;
-          const extension = file.name.split(".").pop() || "jpg";
+          const extension = extensionDeImagen(file);
           const path = `${id}/${crypto.randomUUID()}.${extension}`;
 
           const { error: uploadError } = await supabase.storage
             .from("proyectos")
-            .upload(path, file);
+            .upload(path, file, opcionesDeSubida());
 
           if (uploadError) throw uploadError;
           uploadedPaths.push(path);
@@ -1144,19 +1167,19 @@ export default function ProyectoForm({
           const antesFile = pair.antes!.file!;
           const despuesFile = pair.despues!.file!;
 
-          const antesExt = antesFile.name.split(".").pop() || "jpg";
+          const antesExt = extensionDeImagen(antesFile);
           const antesPath = `${id}/comparaciones/${crypto.randomUUID()}.${antesExt}`;
           const { error: antesUploadError } = await supabase.storage
             .from("proyectos")
-            .upload(antesPath, antesFile);
+            .upload(antesPath, antesFile, opcionesDeSubida());
           if (antesUploadError) throw antesUploadError;
           uploadedComparisonPaths.push(antesPath);
 
-          const despuesExt = despuesFile.name.split(".").pop() || "jpg";
+          const despuesExt = extensionDeImagen(despuesFile);
           const despuesPath = `${id}/comparaciones/${crypto.randomUUID()}.${despuesExt}`;
           const { error: despuesUploadError } = await supabase.storage
             .from("proyectos")
-            .upload(despuesPath, despuesFile);
+            .upload(despuesPath, despuesFile, opcionesDeSubida());
           if (despuesUploadError) throw despuesUploadError;
           uploadedComparisonPaths.push(despuesPath);
 
@@ -1363,6 +1386,14 @@ export default function ProyectoForm({
             <span className="text-xs text-text-secondary">
               JPG, PNG o WEBP
             </span>
+            {optimizando > 0 && (
+              <span
+                role="status"
+                className="text-xs font-medium text-[#1a1a1a]"
+              >
+                Optimizando {optimizando === 1 ? "1 imagen" : `${optimizando} imágenes`}...
+              </span>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -1448,10 +1479,12 @@ export default function ProyectoForm({
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || categorias.length === 0}
+            disabled={saving || optimizando > 0 || categorias.length === 0}
             className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving
+            {optimizando > 0
+              ? "Optimizando..."
+              : saving
               ? "Guardando..."
               : isEditMode
               ? "Guardar cambios"

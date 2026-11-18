@@ -1,5 +1,12 @@
 const LADO_MAXIMO = 1920;
 const CALIDAD_WEBP = 0.82;
+const CALIDAD_JPEG = 0.82;
+
+const EXTENSION_POR_TIPO: Record<string, string> = {
+  "image/webp": "webp",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+};
 
 function canvasToBlob(
   canvas: HTMLCanvasElement,
@@ -17,34 +24,68 @@ export async function comprimirImagen(file: File): Promise<File> {
     return file;
   }
 
-  const escala = Math.min(
-    1,
-    LADO_MAXIMO / Math.max(bitmap.width, bitmap.height)
-  );
-  const ancho = Math.round(bitmap.width * escala);
-  const alto = Math.round(bitmap.height * escala);
+  try {
+    const escala = Math.min(
+      1,
+      LADO_MAXIMO / Math.max(bitmap.width, bitmap.height)
+    );
+    const ancho = Math.round(bitmap.width * escala);
+    const alto = Math.round(bitmap.height * escala);
 
-  const canvas = document.createElement("canvas");
-  canvas.width = ancho;
-  canvas.height = alto;
+    const canvas = document.createElement("canvas");
+    canvas.width = ancho;
+    canvas.height = alto;
 
-  const context = canvas.getContext("2d");
-  if (!context) {
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.drawImage(bitmap, 0, 0, ancho, alto);
+    let tipo = "image/webp";
+    let blob = await canvasToBlob(canvas, tipo, CALIDAD_WEBP);
+
+    if (!blob || blob.type !== tipo) {
+      context.clearRect(0, 0, ancho, alto);
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, ancho, alto);
+      context.drawImage(bitmap, 0, 0, ancho, alto);
+      tipo = "image/jpeg";
+      blob = await canvasToBlob(canvas, tipo, CALIDAD_JPEG);
+    }
+
+    if (!blob || blob.type !== tipo || blob.size >= file.size) {
+      return file;
+    }
+
+    const nombreBase = file.name.replace(/\.[^.]+$/, "") || "imagen";
+    return new File([blob], `${nombreBase}.${EXTENSION_POR_TIPO[tipo]}`, {
+      type: tipo,
+      lastModified: Date.now(),
+    });
+  } finally {
     bitmap.close();
-    return file;
   }
+}
 
-  context.drawImage(bitmap, 0, 0, ancho, alto);
-  bitmap.close();
+export const CACHE_IMAGENES_SEGUNDOS = "31536000";
 
-  const blob = await canvasToBlob(canvas, "image/webp", CALIDAD_WEBP);
-  if (!blob || blob.type !== "image/webp" || blob.size >= file.size) {
-    return file;
-  }
+export function extensionDeImagen(file: File): string {
+  return (
+    EXTENSION_POR_TIPO[file.type] ??
+    file.name.split(".").pop()?.toLowerCase() ??
+    "jpg"
+  );
+}
 
-  const nombreBase = file.name.replace(/\.[^.]+$/, "") || "imagen";
-  return new File([blob], `${nombreBase}.webp`, {
-    type: "image/webp",
-    lastModified: Date.now(),
-  });
+export function opcionesDeSubida() {
+  return { cacheControl: CACHE_IMAGENES_SEGUNDOS, upsert: false };
+}
+
+export function precargarImagen(
+  url: string,
+  prioridad: "high" | "low" | "auto" = "low"
+): void {
+  const imagen = new window.Image();
+  imagen.decoding = "async";
+  imagen.fetchPriority = prioridad;
+  imagen.src = url;
 }

@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { comprimirImagen } from "@/lib/imagenes";
+import {
+  comprimirImagen,
+  extensionDeImagen,
+  opcionesDeSubida,
+} from "@/lib/imagenes";
 import {
   OBJETOS_BUCKET,
   OBJETO_CATEGORIAS_CARPETA,
@@ -133,12 +137,12 @@ export default function ObjetoCategoriaModal({
     let subida: { url: string; path: string } | null = null;
     if (imagen?.file) {
       const archivo = await comprimirImagen(imagen.file);
-      const extension = archivo.name.split(".").pop() || "jpg";
+      const extension = extensionDeImagen(archivo);
       const path = `${OBJETO_CATEGORIAS_CARPETA}${crypto.randomUUID()}.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from(OBJETOS_BUCKET)
-        .upload(path, archivo);
+        .upload(path, archivo, opcionesDeSubida());
 
       if (uploadError) {
         setSaving(false);

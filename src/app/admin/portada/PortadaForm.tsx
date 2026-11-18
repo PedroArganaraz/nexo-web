@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import {
+  comprimirImagen,
+  extensionDeImagen,
+  opcionesDeSubida,
+} from "@/lib/imagenes";
 import type { SitioConfig } from "@/types/database";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -319,6 +324,7 @@ export default function PortadaForm({
     null
   );
   const [saving, setSaving] = useState(false);
+  const [optimizando, setOptimizando] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -327,7 +333,7 @@ export default function PortadaForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function selectFile(file: File) {
+  async function selectFile(file: File) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       toast.error(
         "Formato no soportado. Convertí la imagen a JPG o PNG antes de subir."
@@ -335,11 +341,20 @@ export default function PortadaForm({
       return;
     }
 
+    setOptimizando(true);
+    let archivo = file;
+    try {
+      archivo = await comprimirImagen(file);
+    } catch {
+      archivo = file;
+    }
+    setOptimizando(false);
+
     setHero((prev) => {
       if (prev?.file) URL.revokeObjectURL(prev.previewUrl);
       return {
-        previewUrl: URL.createObjectURL(file),
-        file,
+        previewUrl: URL.createObjectURL(archivo),
+        file: archivo,
       };
     });
     setDesktopFocal({ x: 50, y: 50 });
@@ -406,12 +421,12 @@ export default function PortadaForm({
       let heroPath = sitioConfig?.hero_path ?? null;
 
       if (hero.file) {
-        const extension = hero.file.name.split(".").pop() || "jpg";
+        const extension = extensionDeImagen(hero.file);
         const path = `sitio/hero/${crypto.randomUUID()}.${extension}`;
 
         const { error: uploadError } = await supabase.storage
           .from("proyectos")
-          .upload(path, hero.file);
+          .upload(path, hero.file, opcionesDeSubida());
         if (uploadError) throw uploadError;
 
         const {
@@ -529,7 +544,15 @@ export default function PortadaForm({
           </div>
 
           <div className="flex items-center justify-between gap-4 mt-3">
-            <div>
+            <div className="flex flex-wrap items-center gap-3">
+              {optimizando && (
+                <span
+                  role="status"
+                  className="text-xs font-medium text-[#1a1a1a]"
+                >
+                  Optimizando imagen...
+                </span>
+              )}
               {hero && (
                 <button
                   type="button"
@@ -543,10 +566,14 @@ export default function PortadaForm({
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving || !hero}
+              disabled={saving || optimizando || !hero}
               className="bg-[#1a1a1a] text-white text-sm font-medium tracking-wide px-8 py-3 rounded-full hover:bg-accent transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? "Guardando..." : "Guardar"}
+              {optimizando
+                ? "Optimizando..."
+                : saving
+                  ? "Guardando..."
+                  : "Guardar"}
             </button>
           </div>
         </div>

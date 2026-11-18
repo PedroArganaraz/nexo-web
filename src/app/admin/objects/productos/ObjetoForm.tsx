@@ -27,7 +27,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
-import { comprimirImagen } from "@/lib/imagenes";
+import {
+  comprimirImagen,
+  extensionDeImagen,
+  opcionesDeSubida,
+} from "@/lib/imagenes";
 import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
 import { rutaObjeto } from "@/lib/objetos-links";
 import { slugify, slugUnico } from "@/lib/slug";
@@ -417,12 +421,12 @@ export default function ObjetoForm({
         if (!image.file) continue;
 
         const archivo = await comprimirImagen(image.file);
-        const extension = archivo.name.split(".").pop() || "jpg";
+        const extension = extensionDeImagen(archivo);
         const path = `${OBJETOS_CARPETA}${objetoId}/${crypto.randomUUID()}.${extension}`;
 
         const { error: uploadError } = await supabase.storage
           .from(OBJETOS_BUCKET)
-          .upload(path, archivo);
+          .upload(path, archivo, opcionesDeSubida());
         if (uploadError) throw uploadError;
 
         const {

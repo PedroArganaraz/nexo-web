@@ -32,7 +32,8 @@ export default function Hero({ image }: { image: HeroImage | null }) {
         src={heroImage.src}
         alt="Interior de arquitectura"
         fill
-        priority
+        loading="eager"
+        fetchPriority="high"
         className="object-cover md:hidden"
         style={{
           objectPosition: `${heroImage.mobileFocalX}% ${heroImage.mobileFocalY}%`,
@@ -43,7 +44,8 @@ export default function Hero({ image }: { image: HeroImage | null }) {
         src={heroImage.src}
         alt="Interior de arquitectura"
         fill
-        priority
+        loading="eager"
+        fetchPriority="high"
         className="hidden object-cover md:block"
         style={{
           objectPosition: `${heroImage.focalX}% ${heroImage.focalY}%`,
