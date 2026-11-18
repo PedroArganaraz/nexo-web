@@ -24,9 +24,14 @@ import { createClient } from "@/lib/supabase/client";
 import {
   comprimirImagen,
   extensionDeImagen,
+  generarVersionesImagen,
   opcionesDeSubida,
+  rutaVariante,
+  rutasConVariantes,
+  type VersionesImagen,
 } from "@/lib/imagenes";
 import FocalPointModal from "@/app/admin/FocalPointModal";
+import ImagenVariante from "@/components/ui/ImagenVariante";
 import type {
   Categoria,
   Proyecto,
@@ -56,7 +61,36 @@ type PendingImage = {
   // Presente solo para imágenes nuevas (todavía no subidas a storage).
   // Su ausencia indica que la imagen ya existe en proyecto_imagenes.
   file?: File;
+  variantes?: Pick<VersionesImagen, "card" | "thumb">;
 };
+
+async function subirImagenGaleria(
+  supabase: ReturnType<typeof createClient>,
+  carpeta: string,
+  file: File,
+  variantes: PendingImage["variantes"]
+): Promise<string> {
+  const path = `${carpeta}/${crypto.randomUUID()}.${extensionDeImagen(file)}`;
+  const archivos: [string, File][] = [[path, file]];
+  if (variantes?.card) archivos.push([rutaVariante(path, "card"), variantes.card]);
+  if (variantes?.thumb) archivos.push([rutaVariante(path, "thumb"), variantes.thumb]);
+
+  const subidos: string[] = [];
+  for (const [ruta, archivo] of archivos) {
+    const { error } = await supabase.storage
+      .from("proyectos")
+      .upload(ruta, archivo, opcionesDeSubida());
+    if (error) {
+      if (subidos.length > 0) {
+        await supabase.storage.from("proyectos").remove(subidos);
+      }
+      throw error;
+    }
+    subidos.push(ruta);
+  }
+
+  return path;
+}
 
 // --- Antes y Después ---------------------------------------------------
 // Sección independiente de "Imágenes": estado, tipos y lógica de guardado
@@ -237,13 +271,25 @@ function ImageCard({
       }`}
     >
       <div className="relative aspect-[4/3] bg-bg-alt">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={image.previewUrl}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }}
-        />
+        {image.file ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image.previewUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }}
+          />
+        ) : (
+          <ImagenVariante
+            variante="thumb"
+            src={image.previewUrl}
+            alt=""
+            fill
+            sizes="(min-width: 640px) 240px, 50vw"
+            className="object-cover"
+            style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }}
+          />
+        )}
         <button
           {...attributes}
           {...listeners}
@@ -568,11 +614,15 @@ export default function ProyectoForm({
 
     setOptimizando((n) => n + valid.length);
     for (const file of valid) {
-      const archivo = await optimizar(file);
+      let versiones: VersionesImagen = { grande: file, card: null, thumb: null };
+      try {
+        versiones = await generarVersionesImagen(file);
+      } catch {}
       const item: PendingImage = {
         id: crypto.randomUUID(),
-        file: archivo,
-        previewUrl: URL.createObjectURL(archivo),
+        file: versiones.grande,
+        variantes: { card: versiones.card, thumb: versiones.thumb },
+        previewUrl: URL.createObjectURL(versiones.grande),
         focalX: 50,
         focalY: 50,
       };
@@ -759,7 +809,9 @@ export default function ProyectoForm({
       );
 
       if (removedImages.length > 0) {
-        const pathsToRemove = removedImages.map((img) => img.path);
+        const pathsToRemove = removedImages.flatMap((img) =>
+          rutasConVariantes(img.path)
+        );
         const { error: storageError } = await supabase.storage
           .from("proyectos")
           .remove(pathsToRemove);
@@ -792,14 +844,14 @@ export default function ProyectoForm({
         const esPortada = index === 0;
 
         if (image.file) {
+          let path: string | null = null;
           try {
-            const extension = extensionDeImagen(image.file);
-            const path = `${projectId}/${crypto.randomUUID()}.${extension}`;
-
-            const { error: uploadError } = await supabase.storage
-              .from("proyectos")
-              .upload(path, image.file, opcionesDeSubida());
-            if (uploadError) throw uploadError;
+            path = await subirImagenGaleria(
+              supabase,
+              projectId,
+              image.file,
+              image.variantes
+            );
 
             const {
               data: { publicUrl },
@@ -819,6 +871,11 @@ export default function ProyectoForm({
             if (insertError) throw insertError;
           } catch (imageError) {
             console.error(imageError);
+            if (path) {
+              await supabase.storage
+                .from("proyectos")
+                .remove(rutasConVariantes(path));
+            }
             errors.push("No se pudo subir una de las imágenes nuevas.");
           }
         } else {
@@ -1116,15 +1173,13 @@ export default function ProyectoForm({
           // En modo creación todas las imágenes vienen de addFiles(), que
           // siempre setea `file`.
           const file = image.file!;
-          const extension = extensionDeImagen(file);
-          const path = `${id}/${crypto.randomUUID()}.${extension}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("proyectos")
-            .upload(path, file, opcionesDeSubida());
-
-          if (uploadError) throw uploadError;
-          uploadedPaths.push(path);
+          const path = await subirImagenGaleria(
+            supabase,
+            id,
+            file,
+            image.variantes
+          );
+          uploadedPaths.push(...rutasConVariantes(path));
 
           const {
             data: { publicUrl },

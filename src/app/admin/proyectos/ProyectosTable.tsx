@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   DndContext,
   closestCenter,
@@ -19,6 +18,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import { rutasConVariantes } from "@/lib/imagenes";
+import ImagenVariante from "@/components/ui/ImagenVariante";
 import type { AdminProyecto } from "@/lib/admin/proyectos";
 import type { ProyectoEstado } from "@/types/database";
 
@@ -178,7 +179,8 @@ function ProyectoRow({
           }`}
         >
           {proyecto.coverImage && (
-            <Image
+            <ImagenVariante
+              variante="thumb"
               src={proyecto.coverImage.src}
               alt={proyecto.coverImage.alt}
               fill
@@ -326,7 +328,9 @@ export default function ProyectosTable({
       .filter((path): path is string => Boolean(path));
 
     if (paths.length > 0) {
-      await supabase.storage.from("proyectos").remove(paths);
+      await supabase.storage
+        .from("proyectos")
+        .remove(paths.flatMap(rutasConVariantes));
     }
 
     const { error } = await supabase.from("proyectos").delete().eq("id", id);

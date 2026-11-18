@@ -1,10 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Image from 'next/image'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import type { Project, ProjectStage } from '@/types'
 import Lightbox from '@/components/ui/Lightbox'
+import ImagenVariante from '@/components/ui/ImagenVariante'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -97,7 +97,8 @@ function ProjectCard({
       className="group relative w-full overflow-hidden aspect-[4/3] cursor-pointer text-left bg-[#f5f5f5]"
       aria-label={`Ver proyecto ${project.title}`}
     >
-      <Image
+      <ImagenVariante
+        variante="card"
         src={project.coverImage.src}
         alt={project.coverImage.alt}
         fill

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import type { Project } from '@/types'
 import { precargarImagen } from '@/lib/imagenes'
 import ComparadorModal from './ComparadorModal'
+import ImagenVariante from './ImagenVariante'
 
 interface LightboxProps {
   project: Project
@@ -192,7 +193,8 @@ export default function Lightbox({ project, onClose }: LightboxProps) {
                 }`}
               >
                 {miniaturasHabilitadas && (
-                  <Image
+                  <ImagenVariante
+                    variante="thumb"
                     src={img.src}
                     alt={img.alt}
                     fill

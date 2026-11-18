@@ -21,6 +21,12 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 - Las rutas de `/admin` están protegidas por `src/proxy.ts`. Las páginas públicas no pasan por ahí.
 - Las imágenes se guardan en el bucket `proyectos` de Supabase Storage. Las políticas del bucket no filtran por carpeta.
 - Al borrar un registro con imágenes, o reemplazar una imagen, borrar también el archivo de Storage.
+- **Variantes de las imágenes de galería de Proyectos.** Cada imagen nueva de la galería se sube en tres versiones, en la misma carpeta, con el mismo formato y la misma extensión (WebP, o JPEG si el navegador no puede generar WebP): la grande `{carpeta}/{uuid}.{ext}` (lado mayor de 1920 px como máximo), `{uuid}-card.{ext}` (960 px) y `{uuid}-thumb.{ext}` (320 px). Solo se achican, nunca se recortan ni se agrandan, y se aplica la orientación EXIF, así que los puntos focales siguen valiendo.
+  - La base de datos guarda solo la ruta y la URL de la versión grande. Las otras se derivan por nombre con `rutaVariante` y `urlVariante` (`src/lib/imagenes.ts`).
+  - Cualquier borrado de una imagen de galería tiene que borrar las tres versiones (`rutasConVariantes`). Que una variante no exista no es un error.
+  - Las imágenes subidas antes de este cambio no tienen variantes. Por eso la interfaz las muestra con `ImagenVariante` (`src/components/ui/ImagenVariante.tsx`), que pide la variante y, si no carga, cae una sola vez a la URL grande.
+  - Tarjetas del Portfolio: variante `card`. Miniaturas del Lightbox, de la lista de Proyectos y de la galería del formulario: variante `thumb`. La foto principal del Lightbox usa la grande.
+  - No se generan variantes para antes y después, Portada ni Objects.
 - Cualquier dato privado del negocio (costos, proveedores, márgenes) va en tablas sin acceso para anon, nunca como columna de una tabla que el sitio público lee.
 
 ## Nexo Objects
