@@ -21,12 +21,19 @@ Estas reglas aplican a todo el trabajo en este repositorio, en cada paso y sin q
 - Las rutas de `/admin` están protegidas por `src/proxy.ts`. Las páginas públicas no pasan por ahí.
 - Las imágenes se guardan en el bucket `proyectos` de Supabase Storage. Las políticas del bucket no filtran por carpeta.
 - Al borrar un registro con imágenes, o reemplazar una imagen, borrar también el archivo de Storage.
-- **Variantes de las imágenes de galería de Proyectos.** Cada imagen nueva de la galería se sube en tres versiones, en la misma carpeta, con el mismo formato y la misma extensión (WebP, o JPEG si el navegador no puede generar WebP): la grande `{carpeta}/{uuid}.{ext}` (lado mayor de 1920 px como máximo), `{uuid}-card.{ext}` (960 px) y `{uuid}-thumb.{ext}` (320 px). Solo se achican, nunca se recortan ni se agrandan, y se aplica la orientación EXIF, así que los puntos focales siguen valiendo.
+- **Variantes de las imágenes de galería de Proyectos.** Cada imagen nueva de la galería se sube en tres versiones, en la misma carpeta, con el mismo formato y la misma extensión (WebP, o JPEG si el navegador no puede generar WebP): la grande `{carpeta}/{uuid}.{ext}` (lado mayor de 1920 px como máximo), `{uuid}-card.{ext}` (1280 px) y `{uuid}-thumb.{ext}` (320 px). Solo se achican, nunca se recortan ni se agrandan, y se aplica la orientación EXIF, así que los puntos focales siguen valiendo. Los límites, las calidades (0.82) y los sufijos viven en `src/lib/imagenes-constantes.ts`, que no importa nada de React ni del navegador y lo usan tanto la app como el script de migración.
   - La base de datos guarda solo la ruta y la URL de la versión grande. Las otras se derivan por nombre con `rutaVariante` y `urlVariante` (`src/lib/imagenes.ts`).
   - Cualquier borrado de una imagen de galería tiene que borrar las tres versiones (`rutasConVariantes`). Que una variante no exista no es un error.
   - Las imágenes subidas antes de este cambio no tienen variantes. Por eso la interfaz las muestra con `ImagenVariante` (`src/components/ui/ImagenVariante.tsx`), que pide la variante y, si no carga, cae una sola vez a la URL grande.
   - Tarjetas del Portfolio: variante `card`. Miniaturas del Lightbox, de la lista de Proyectos y de la galería del formulario: variante `thumb`. La foto principal del Lightbox usa la grande.
   - No se generan variantes para antes y después, Portada ni Objects.
+- **Migración de imágenes viejas (`scripts/migrar-imagenes.ts`).** Convierte a WebP las imágenes de galería, antes y después y Portada subidas antes de la compresión, y genera las variantes card y thumb de la galería. Objects no se toca. Se corre desde la raíz del proyecto con Node 22: `node --experimental-strip-types scripts/migrar-imagenes.ts [opciones]`.
+  - Sin opciones o con `--dry-run`: no escribe nada. Lee con la clave anónima y muestra por proyecto cuántas imágenes hay, cuánto pesan, en qué formato y cuáles se migrarían, más los archivos huérfanos del bucket.
+  - `--apply`: migra. Por cada imagen descarga el original, genera las versiones, las sube con caché de un año, verifica que existan y tengan el tamaño esperado, y recién entonces actualiza la fila. Si algo falla, no toca la base para esa imagen y borra lo que se había subido de ella.
+  - `--proyecto <id o nombre>`, `--portada` y `--limite N` acotan qué se procesa. `--revertir <archivo>` vuelve la base a las rutas y URLs anteriores usando un respaldo.
+  - Antes de escribir, guarda los valores anteriores en `scripts/respaldo/{fecha-hora}.json` (ignorado por git). Se puede correr más de una vez: lo ya migrado se omite.
+  - **Los originales nunca se borran de Storage**: quedan como respaldo y por eso `--revertir` es posible.
+  - `--apply` y `--revertir` necesitan `SUPABASE_SERVICE_ROLE_KEY` en `.env.local`. Esa clave vive solo ahí: nunca en el código, en variables `NEXT_PUBLIC_*` ni en Vercel, y el script nunca la imprime.
 - Cualquier dato privado del negocio (costos, proveedores, márgenes) va en tablas sin acceso para anon, nunca como columna de una tabla que el sitio público lee.
 
 ## Nexo Objects

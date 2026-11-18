@@ -1,16 +1,24 @@
-const LADO_MAXIMO = 1920;
-const LADO_CARD = 960;
-const LADO_THUMB = 320;
-const CALIDAD_WEBP = 0.82;
-const CALIDAD_JPEG = 0.82;
+import {
+  CACHE_IMAGENES_SEGUNDOS,
+  CALIDAD_JPEG,
+  CALIDAD_WEBP,
+  LADO_MAXIMO_GRANDE,
+  LADO_MAXIMO_VARIANTE,
+  SUFIJOS_VARIANTE,
+} from "@/lib/imagenes-constantes";
+
+export {
+  rutaVariante,
+  rutasConVariantes,
+  urlVariante,
+  type Variante,
+} from "@/lib/imagenes-constantes";
 
 const EXTENSION_POR_TIPO: Record<string, string> = {
   "image/webp": "webp",
   "image/jpeg": "jpg",
   "image/png": "png",
 };
-
-export type Variante = "card" | "thumb";
 
 export type VersionesImagen = {
   grande: File;
@@ -84,7 +92,7 @@ export async function comprimirImagen(file: File): Promise<File> {
   if (!bitmap) return file;
 
   try {
-    const blob = await codificarPreferido(bitmap, LADO_MAXIMO);
+    const blob = await codificarPreferido(bitmap, LADO_MAXIMO_GRANDE);
     if (!blob || blob.size >= file.size) return file;
     return aArchivo(blob, file.name, "");
   } finally {
@@ -99,55 +107,44 @@ export async function generarVersionesImagen(
   if (!bitmap) return { grande: file, card: null, thumb: null };
 
   try {
-    const recodificada = await codificarPreferido(bitmap, LADO_MAXIMO);
+    const recodificada = await codificarPreferido(bitmap, LADO_MAXIMO_GRANDE);
     const conservarOriginal =
       Boolean(EXTENSION_POR_TIPO[file.type]) &&
       (!recodificada || recodificada.size >= file.size);
 
     if (conservarOriginal) {
-      const card = await codificar(bitmap, LADO_CARD, file.type);
-      const thumb = await codificar(bitmap, LADO_THUMB, file.type);
+      const card = await codificar(bitmap, LADO_MAXIMO_VARIANTE.card, file.type);
+      const thumb = await codificar(bitmap, LADO_MAXIMO_VARIANTE.thumb, file.type);
       if (card && thumb) {
         return {
           grande: file,
-          card: aArchivo(card, file.name, "-card"),
-          thumb: aArchivo(thumb, file.name, "-thumb"),
+          card: aArchivo(card, file.name, SUFIJOS_VARIANTE.card),
+          thumb: aArchivo(thumb, file.name, SUFIJOS_VARIANTE.thumb),
         };
       }
     }
 
     if (!recodificada) return { grande: file, card: null, thumb: null };
 
-    const card = await codificar(bitmap, LADO_CARD, recodificada.type);
-    const thumb = await codificar(bitmap, LADO_THUMB, recodificada.type);
+    const card = await codificar(
+      bitmap,
+      LADO_MAXIMO_VARIANTE.card,
+      recodificada.type
+    );
+    const thumb = await codificar(
+      bitmap,
+      LADO_MAXIMO_VARIANTE.thumb,
+      recodificada.type
+    );
     return {
       grande: aArchivo(recodificada, file.name, ""),
-      card: card ? aArchivo(card, file.name, "-card") : null,
-      thumb: thumb ? aArchivo(thumb, file.name, "-thumb") : null,
+      card: card ? aArchivo(card, file.name, SUFIJOS_VARIANTE.card) : null,
+      thumb: thumb ? aArchivo(thumb, file.name, SUFIJOS_VARIANTE.thumb) : null,
     };
   } finally {
     bitmap.close();
   }
 }
-
-export function rutaVariante(path: string, variante: Variante): string {
-  const punto = path.lastIndexOf(".");
-  const barra = path.lastIndexOf("/");
-  if (punto <= barra) return `${path}-${variante}`;
-  return `${path.slice(0, punto)}-${variante}${path.slice(punto)}`;
-}
-
-export function urlVariante(url: string, variante: Variante): string {
-  const corte = url.search(/[?#]/);
-  if (corte === -1) return rutaVariante(url, variante);
-  return `${rutaVariante(url.slice(0, corte), variante)}${url.slice(corte)}`;
-}
-
-export function rutasConVariantes(path: string): string[] {
-  return [path, rutaVariante(path, "card"), rutaVariante(path, "thumb")];
-}
-
-export const CACHE_IMAGENES_SEGUNDOS = "31536000";
 
 export function extensionDeImagen(file: File): string {
   return (
