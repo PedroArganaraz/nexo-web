@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { PROPORCION_FICHA } from "@/lib/objetos-constantes";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -8,9 +10,10 @@ function clamp(value: number, min: number, max: number) {
 
 type Size = { width: number; height: number };
 
-const MARCO_CLASES = {
-  "4/3": "max-w-md aspect-[4/3]",
-  "1/1": "max-w-sm aspect-square",
+const MARCO_ANCHOS = {
+  "4/3": "max-w-md",
+  "1/1": "max-w-sm",
+  [PROPORCION_FICHA]: "max-w-md",
 } as const;
 
 export default function FocalPointModal({
@@ -19,12 +22,14 @@ export default function FocalPointModal({
   onCancel,
   aspecto = "4/3",
   nota,
+  vistaTarjeta = false,
 }: {
   image: { previewUrl: string; focalX: number; focalY: number };
   onSave: (focalX: number, focalY: number) => void;
   onCancel: () => void;
-  aspecto?: keyof typeof MARCO_CLASES;
+  aspecto?: keyof typeof MARCO_ANCHOS;
   nota?: string;
+  vistaTarjeta?: boolean;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<{
@@ -110,6 +115,37 @@ export default function FocalPointModal({
   const focalY = excessY > 0 ? clamp((-offset.y / excessY) * 100, 0, 100) : 50;
   const canDrag = excessX > 0 || excessY > 0;
 
+  const marco = (
+    <div
+      ref={frameRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      className={`relative w-full mx-auto ${MARCO_ANCHOS[aspecto]} overflow-hidden bg-bg-alt rounded-sm select-none ${
+        canDrag ? "cursor-grab active:cursor-grabbing" : ""
+      }`}
+      style={{ touchAction: "none", aspectRatio: aspecto }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={image.previewUrl}
+        alt=""
+        draggable={false}
+        onLoad={handleImageLoad}
+        className="absolute pointer-events-none select-none"
+        style={{
+          width: renderedWidth || undefined,
+          height: renderedHeight || undefined,
+          left: offset.x,
+          top: offset.y,
+          maxWidth: "none",
+          maxHeight: "none",
+        }}
+      />
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
@@ -124,34 +160,33 @@ export default function FocalPointModal({
           <p className="text-xs text-text-secondary -mt-2 mb-4">{nota}</p>
         )}
 
-        <div
-          ref={frameRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className={`relative w-full mx-auto ${MARCO_CLASES[aspecto]} overflow-hidden bg-bg-alt rounded-sm select-none ${
-            canDrag ? "cursor-grab active:cursor-grabbing" : ""
-          }`}
-          style={{ touchAction: "none" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={image.previewUrl}
-            alt=""
-            draggable={false}
-            onLoad={handleImageLoad}
-            className="absolute pointer-events-none select-none"
-            style={{
-              width: renderedWidth || undefined,
-              height: renderedHeight || undefined,
-              left: offset.x,
-              top: offset.y,
-              maxWidth: "none",
-              maxHeight: "none",
-            }}
-          />
-        </div>
+        {vistaTarjeta ? (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="w-full min-w-0 sm:flex-1">
+              <p className="text-xs font-medium text-[#1a1a1a] mb-2">
+                Ficha del producto
+              </p>
+              {marco}
+            </div>
+            <div className="shrink-0">
+              <p className="text-xs font-medium text-[#1a1a1a] mb-2">
+                Tarjeta en el listado
+              </p>
+              <div className="relative w-32 aspect-square overflow-hidden bg-bg-alt rounded-sm">
+                <Image
+                  src={image.previewUrl}
+                  alt=""
+                  fill
+                  sizes="128px"
+                  className="object-cover pointer-events-none select-none"
+                  style={{ objectPosition: `${focalX}% ${focalY}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          marco
+        )}
 
         <div className="flex items-center gap-4 mt-6">
           <button

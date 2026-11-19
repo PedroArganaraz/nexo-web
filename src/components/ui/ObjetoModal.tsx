@@ -7,6 +7,7 @@ import type { NexoObject } from '@/types'
 import { whatsappHref } from '@/lib/contacto'
 import { formatearPrecio } from '@/lib/precio'
 import { copiarTexto, puedeCompartirNativo, urlAbsoluta } from '@/lib/compartir'
+import { PROPORCION_FICHA } from '@/lib/objetos-constantes'
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -28,6 +29,7 @@ export default function ObjetoModal({
   onClose: () => void
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [imagenCargada, setImagenCargada] = useState<string | null>(null)
   const [estadoCopia, setEstadoCopia] = useState<EstadoCopia>('idle')
   const timerCopiaRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const compartirNativo = useSyncExternalStore(
@@ -137,17 +139,26 @@ export default function ObjetoModal({
           role="dialog"
           aria-modal="true"
           aria-label={objeto.name}
-          className="bg-white max-h-[90vh] overflow-y-auto overscroll-contain rounded-xl flex flex-col md:flex-row"
+          className="bg-white max-h-[calc(100vh-2rem)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] md:max-h-[90vh] supports-[height:100dvh]:md:max-h-[90vh] overflow-y-auto overscroll-contain rounded-xl flex flex-col md:flex-row"
         >
           <div className="md:w-[58%] flex-shrink-0 flex flex-col">
-            <div className="relative aspect-square w-full bg-[#f5f5f5] overflow-hidden rounded-t-xl md:rounded-l-xl md:rounded-tr-none">
+            <div
+              className="relative w-full shrink-0 bg-[#f5f5f5] overflow-hidden rounded-t-xl md:rounded-l-xl md:rounded-tr-none"
+              style={{ aspectRatio: PROPORCION_FICHA }}
+            >
               {activeImage.src && (
                 <Image
                   key={activeImage.src}
                   src={activeImage.src}
                   alt={activeImage.alt}
                   fill
-                  className="object-contain"
+                  onLoad={() => setImagenCargada(activeImage.src)}
+                  className={`object-cover transition-opacity duration-300 motion-reduce:transition-none ${
+                    imagenCargada === activeImage.src ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  style={{
+                    objectPosition: `${activeImage.focalX ?? 50}% ${activeImage.focalY ?? 50}%`,
+                  }}
                   sizes="(max-width: 768px) 100vw, 58vw"
                 />
               )}

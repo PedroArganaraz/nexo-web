@@ -32,7 +32,11 @@ import {
   extensionDeImagen,
   opcionesDeSubida,
 } from "@/lib/imagenes";
-import { OBJETOS_BUCKET, OBJETOS_CARPETA } from "@/lib/objetos-constantes";
+import {
+  OBJETOS_BUCKET,
+  OBJETOS_CARPETA,
+  PROPORCION_FICHA,
+} from "@/lib/objetos-constantes";
 import { rutaObjeto } from "@/lib/objetos-links";
 import { slugify, slugUnico } from "@/lib/slug";
 import {
@@ -1173,8 +1177,9 @@ export default function ObjetoForm({
           image={editingImage}
           onSave={handleSaveFocalPoint}
           onCancel={() => setEditingImage(null)}
-          aspecto="1/1"
-          nota="El marco es el recorte cuadrado de la tarjeta. En la ficha del producto la foto se ve completa."
+          aspecto={PROPORCION_FICHA}
+          vistaTarjeta
+          nota="La foto siempre llena el marco con zoom. El punto que elegís es el centro del zoom, en la ficha del producto y en la tarjeta cuadrada del listado."
         />
       )}
     </div>

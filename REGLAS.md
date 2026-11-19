@@ -57,6 +57,13 @@ Sección nueva del sitio para mostrar otro tipo de servicio o producto de diseñ
 - Datos internos del producto (costo y proveedor, ambos opcionales) viven en la tabla objeto_datos_internos, solo para usuarios autenticados. El beneficio y el margen no se guardan: se calculan como precio menos costo, y margen sobre el precio de venta.
 - Estos datos nunca se muestran en el sitio público ni se consultan desde código público (src/lib/objetos.ts, páginas de /objects y componentes del sitio). Solo los usa el admin.
 
+### Recorte de las fotos de productos
+
+- La foto principal de la ficha del producto (`ObjetoModal`) usa un marco de proporción fija 5:4 (ancho/alto) en todos los anchos de pantalla. La foto siempre llena el marco con zoom (`object-cover`), sin bandas, y el recorte lo decide el punto focal de cada imagen (`focal_x`, `focal_y`). El marco no cambia de tamaño al pasar de una foto a otra ni mientras carga.
+- La proporción vive en la constante `PROPORCION_FICHA` (`src/lib/objetos-constantes.ts`). El editor de recorte de productos (`FocalPointModal` desde `ObjetoForm`) importa esa misma constante para su marco, así que no pueden desincronizarse. Si cambia la proporción de la ficha, se cambia solo ahí.
+- El editor de productos muestra además una vista previa de la tarjeta cuadrada del listado con el mismo punto focal. El punto elegido es el centro del zoom en las dos.
+- Las tarjetas del listado de productos y de categorías siguen siendo cuadradas (1:1). Las categorías de Objects y los Proyectos mantienen sus proporciones en el editor (1:1 y 4:3).
+
 ### Regla de visibilidad pública
 
 - Un producto se ve si está activo y su categoría está activa.
