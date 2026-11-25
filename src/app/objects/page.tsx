@@ -3,6 +3,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
 import CategoriasGrid from "@/components/objects/CategoriasGrid";
+import PasosDisenoAMedida from "@/components/objects/PasosDisenoAMedida";
 import { getObjetoCategoriasVisibles } from "@/lib/objetos";
 
 export const metadata: Metadata = {
@@ -22,6 +23,10 @@ export default async function ObjectsPage() {
           <h1 className="font-helvetica font-bold text-[#1a1a1a] text-4xl md:text-6xl leading-tight">
             Nexo Objects
           </h1>
+
+          <div className="mt-10 md:mt-16">
+            <PasosDisenoAMedida />
+          </div>
 
           {categorias.length === 0 ? (
             <div className="mt-10 md:mt-16 rounded-2xl border border-dashed border-gray-200 bg-bg-alt px-6 py-20 md:py-28 flex items-center justify-center text-center">
