@@ -21,7 +21,7 @@ export default function PasosDisenoAMedida() {
     <section aria-labelledby="disenos-a-medida" className="text-center">
       <h2
         id="disenos-a-medida"
-        className="font-helvetica text-2xl md:text-3xl text-[#1a1a1a]"
+        className="font-helvetica font-bold text-2xl md:text-3xl text-[#1a1a1a]"
       >
         Diseños a medida
       </h2>
