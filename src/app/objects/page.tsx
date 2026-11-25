@@ -20,13 +20,11 @@ export default async function ObjectsPage() {
       <Navbar solid />
       <main className="pt-16">
         <section className="max-w-7xl mx-auto px-6 pt-6 pb-16 md:pt-8 md:pb-28">
-          <h1 className="font-helvetica font-bold text-[#1a1a1a] text-4xl md:text-6xl leading-tight">
+          <PasosDisenoAMedida />
+
+          <h1 className="mt-12 md:mt-20 font-helvetica font-bold text-[#1a1a1a] text-4xl md:text-6xl leading-tight">
             Nexo Objects
           </h1>
-
-          <div className="mt-10 md:mt-16">
-            <PasosDisenoAMedida />
-          </div>
 
           {categorias.length === 0 ? (
             <div className="mt-10 md:mt-16 rounded-2xl border border-dashed border-gray-200 bg-bg-alt px-6 py-20 md:py-28 flex items-center justify-center text-center">
