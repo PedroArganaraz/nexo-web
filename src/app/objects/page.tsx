@@ -19,7 +19,7 @@ export default async function ObjectsPage() {
     <>
       <Navbar solid />
       <main className="pt-16">
-        <section className="max-w-7xl mx-auto px-6 pt-6 pb-16 md:pt-8 md:pb-28">
+        <section className="max-w-7xl mx-auto px-6 pt-12 pb-16 md:pt-20 md:pb-28">
           <PasosDisenoAMedida />
 
           <h1 className="mt-12 md:mt-20 font-helvetica font-bold text-[#1a1a1a] text-4xl md:text-6xl leading-tight">
